@@ -1,10 +1,64 @@
 /**
- * AURQO AI Research Workspace - Sample & Initial Data Store
+ * THAMILI AI Research Workspace - Sample & Initial Data Store
  * Structured across domains & folders
  */
 
-export const AURQO_INITIAL_DATA = {
+export const THAMILI_INITIAL_DATA = {
+  user: {
+    name: "Lingavel",
+    email: "lingavel@thamili.ai",
+    role: "Research Scholar",
+    avatar: "L",
+    setupProgress: "2/5 Steps",
+    setupPercent: 40
+  },
   activeFolderId: "folder-ai-ml",
+  activeDocId: "doc-recent-1",
+  suggestedSearchTopics: [
+    "Large language models in education",
+    "CRISPR gene editing ethics",
+    "Microplastics and human health",
+    "Climate change adaptation strategies"
+  ],
+  recentDocuments: [
+    {
+      id: "doc-recent-1",
+      title: "Untitled",
+      openedTime: "August 26 · Opened 2 minutes ago",
+      prompt: "A research proposal on machine learning in healthcare",
+      content: "",
+      words: 0,
+      active: true
+    },
+    {
+      id: "doc-recent-2",
+      title: "Untitled",
+      openedTime: "August 24 · Opened 9 minutes ago",
+      prompt: "A literature review on renewable energy",
+      content: "",
+      words: 0,
+      active: false
+    },
+    {
+      id: "doc-recent-3",
+      title: "Impact of AI on Education & Adaptive Learning",
+      openedTime: "August 20 · Opened 1 day ago",
+      prompt: "What are the latest advancements in artificial intelligence and their impact on education?",
+      content: "",
+      words: 1420,
+      active: false
+    },
+    {
+      id: "doc-recent-4",
+      title: "Post-Quantum Cryptography Architecture",
+      openedTime: "August 15 · Opened 3 days ago",
+      prompt: "NIST post-quantum cryptographic primitives (ML-KEM, ML-DSA) in enterprise environments",
+      content: "",
+      words: 850,
+      active: false
+    }
+  ],
+  librarySources: [],
   
   folders: [
     {
@@ -715,6 +769,9 @@ export const AURQO_INITIAL_DATA = {
   ]
 };
 
+export const AURQO_INITIAL_DATA = THAMILI_INITIAL_DATA;
+
 if (typeof window !== 'undefined') {
-  window.AURQO_INITIAL_DATA = AURQO_INITIAL_DATA;
+  window.THAMILI_INITIAL_DATA = THAMILI_INITIAL_DATA;
+  window.AURQO_INITIAL_DATA = THAMILI_INITIAL_DATA;
 }
