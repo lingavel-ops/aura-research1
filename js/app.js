@@ -12,7 +12,7 @@ const state = {
   activeFolderId: THAMILI_INITIAL_DATA.activeFolderId,
   currentView: 'dashboard', // dashboard, new-research, library, papers, chat, history, saved
   activeResearchId: 'impact-of-ai-on-education',
-  activeWorkspaceTab: 'overview',
+  activeWorkspaceTab: 'papers',
   folders: JSON.parse(JSON.stringify(THAMILI_INITIAL_DATA.folders)),
   researchItems: JSON.parse(JSON.stringify(THAMILI_INITIAL_DATA.researchItems)),
   documents: JSON.parse(JSON.stringify(THAMILI_INITIAL_DATA.documents)),
@@ -318,10 +318,7 @@ function init() {
   NetworkingModule.init();
   bindEvents();
   
-  // Load default research workspace view
-  if (state.researchItems[state.activeResearchId]) {
-    renderResearchWorkspace(state.researchItems[state.activeResearchId]);
-  }
+  // Research workspace will open dynamically when a search is executed or an item is selected
 
   // Initialize smooth viewport scroll animations
   initScrollAnimations();
@@ -1072,92 +1069,7 @@ function renderResearchWorkspace(research) {
     `;
   }
 
-  // Render Tab 1: Overview
-  const overviewContainer = document.getElementById('tab-panel-overview');
-  if (overviewContainer && research.overview) {
-    overviewContainer.innerHTML = `
-      <div class="overview-summary-card">
-        <div class="overview-heading">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary-indigo)" stroke-width="2">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-          </svg>
-          <span>AI Executive Synthesis</span>
-        </div>
-        
-        <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-main); margin-bottom: 8px;">Key Takeaways:</div>
-        <ul class="overview-takeaways-list">
-          ${research.overview.takeaways.map(takeaway => `
-            <li class="overview-takeaway-item">
-              <div class="takeaway-dot"></div>
-              <div>${takeaway}</div>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-
-      <div class="section-subtitle-bar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-        <span>Key Empirical Findings</span>
-      </div>
-      <div class="key-findings-grid">
-        ${(research.keyFindings || []).map(finding => `
-          <div class="finding-card">
-            <div class="finding-metric">${finding.metric}</div>
-            <div class="finding-title">${finding.title}</div>
-            <div class="finding-desc">${finding.desc}</div>
-          </div>
-        `).join('')}
-      </div>
-
-      <div class="section-subtitle-bar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <span>Important Insights & Analysis</span>
-      </div>
-      <div class="insights-container">
-        ${(research.insights || []).map(insight => `
-          <div class="insight-callout-card">
-            <div class="insight-icon">${ICONS.lightbulb}</div>
-            <div class="insight-content">
-              <span class="insight-tag">${insight.tag}</span>
-              <div class="insight-title">${insight.title}</div>
-              <div class="insight-text">${insight.text}</div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-
-      <div class="related-topics-wrap">
-        <div style="font-weight: 700; font-size: 0.94rem; color: var(--text-main);">Related Research Exploration Topics:</div>
-        <div class="related-pills-list">
-          ${(research.relatedTopics || []).map(topic => `
-            <div class="related-topic-pill" data-topic="${topic}">
-              ${ICONS.sparkle}
-              <span>${topic}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-
-    // Bind click on related topics
-    overviewContainer.querySelectorAll('.related-topic-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        const topic = pill.getAttribute('data-topic');
-        elements.mainResearchInput.value = topic;
-        startResearchFlow(topic, folder.id);
-      });
-    });
-  }
-
-  // Render Tab 2: Papers
+  // Render Tab: Papers
   const papersContainer = document.getElementById('tab-panel-papers');
   if (papersContainer) {
     const papers = research.papers || [];
@@ -2355,9 +2267,9 @@ function bindEvents() {
   if (elements.btnExplore) {
     elements.btnExplore.addEventListener('click', () => {
       switchView('dashboard');
-      switchWorkspaceTab('overview');
+      switchWorkspaceTab('papers');
       elements.resultsWorkspace.scrollIntoView({ behavior: 'smooth' });
-      showToast('Exploring current research topic and sources', ICONS.sparkle);
+      showToast('Exploring current research papers and sources', ICONS.sparkle);
     });
   }
   if (elements.btnSources) {
@@ -3630,22 +3542,28 @@ function updateActiveDocTitle(title) {
 }
 
 function updatePromptFeedback() {
-  if (!elements.docPromptTextarea || !elements.promptFeedbackText || !elements.docPromptFeedbackRow) return;
+  if (!elements.docPromptTextarea || !elements.docPromptFeedbackRow) return;
   const val = elements.docPromptTextarea.value.trim();
   const len = val.length;
 
-  if (len === 0) {
+  if (len === 0 || len < 30) {
     elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row weak';
-    elements.promptFeedbackText.textContent = 'Weak prompt: Add more context for higher quality generations';
-  } else if (len < 30) {
-    elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row weak';
-    elements.promptFeedbackText.textContent = 'Weak prompt: Add more context for higher quality generations';
+    elements.docPromptFeedbackRow.innerHTML = `
+      <strong class="prompt-feedback-label">Weak prompt:</strong>
+      <span class="prompt-feedback-text" id="prompt-feedback-text">Add more context for higher quality generations</span>
+    `;
   } else if (len < 75) {
     elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row good';
-    elements.promptFeedbackText.textContent = 'Good prompt: Clear focus, ready for outline synthesis';
+    elements.docPromptFeedbackRow.innerHTML = `
+      <strong class="prompt-feedback-label">Good prompt:</strong>
+      <span class="prompt-feedback-text" id="prompt-feedback-text">Clear focus, ready for outline synthesis</span>
+    `;
   } else {
     elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row good';
-    elements.promptFeedbackText.textContent = 'Strong prompt: High domain specificity for academic quality';
+    elements.docPromptFeedbackRow.innerHTML = `
+      <strong class="prompt-feedback-label">Strong prompt:</strong>
+      <span class="prompt-feedback-text" id="prompt-feedback-text">High domain specificity for academic quality</span>
+    `;
   }
 }
 
@@ -3665,32 +3583,36 @@ function updateLiveWordCount() {
 }
 
 function handlePromptNext() {
-  const prompt = elements.docPromptTextarea?.value.trim() || 'A research proposal on machine learning in healthcare';
+  const prompt = elements.docPromptTextarea?.value.trim() || 'A literature review on renewable energy policy';
   
   if (elements.docPromptAccordionBox) {
     elements.docPromptAccordionBox.classList.add('collapsed');
   }
 
-  if (elements.docRichEditorArea) {
-    elements.docRichEditorArea.classList.add('active');
+  // If on dashboard, execute research pipeline with prompt
+  if (state.currentView === 'dashboard') {
+    executeResearchPipeline(prompt, state.activeFolderId);
+    showToast(`Starting research for "${prompt.length > 35 ? prompt.substring(0, 35) + '...' : prompt}"`, ICONS.sparkle);
+  } else {
+    if (elements.docRichEditorArea) {
+      elements.docRichEditorArea.classList.add('active');
+    }
+    if (elements.docEditorContent) {
+      elements.docEditorContent.innerHTML = `
+        <h2>1. Introduction & Background</h2>
+        <p>The application of autonomous intelligent systems in <i>${prompt}</i> addresses core challenges in diagnostic accuracy, workflow latency, and data harmonization. As recent studies by Tanaka et al. (2024) illustrate, modern multimodal models provide cognitive feedback loops that significantly optimize empirical outcomes.</p>
+        
+        <h2>2. Research Hypotheses & Key Objectives</h2>
+        <p>We hypothesize that integrating constrained Socratic decoding algorithms into domain-specific pipelines enhances concept mastery by up to 38% while preventing hallucinated clinical assertions (Rostova & Chen, 2025).</p>
+        
+        <h2>3. Proposed Methodology & Architecture</h2>
+        <p>We leverage a federated neural processing framework operating on edge NPUs. Zero student or patient behavioral data is egressed to external cloud clusters, ensuring compliance with strict healthcare and institutional privacy directives.</p>
+      `;
+      elements.docEditorContent.focus();
+    }
+    updateLiveWordCount();
+    showToast('Research draft initialized from prompt!', ICONS.sparkle);
   }
-
-  if (elements.docEditorContent) {
-    elements.docEditorContent.innerHTML = `
-      <h2>1. Introduction & Background</h2>
-      <p>The application of autonomous intelligent systems in <i>${prompt}</i> addresses core challenges in diagnostic accuracy, workflow latency, and data harmonization. As recent studies by Tanaka et al. (2024) illustrate, modern multimodal models provide cognitive feedback loops that significantly optimize empirical outcomes.</p>
-      
-      <h2>2. Research Hypotheses & Key Objectives</h2>
-      <p>We hypothesize that integrating constrained Socratic decoding algorithms into domain-specific pipelines enhances concept mastery by up to 38% while preventing hallucinated clinical assertions (Rostova & Chen, 2025).</p>
-      
-      <h2>3. Proposed Methodology & Architecture</h2>
-      <p>We leverage a federated neural processing framework operating on edge NPUs. Zero student or patient behavioral data is egressed to external cloud clusters, ensuring compliance with strict healthcare and institutional privacy directives.</p>
-    `;
-    elements.docEditorContent.focus();
-  }
-
-  updateLiveWordCount();
-  showToast('Research draft initialized from prompt!', ICONS.sparkle);
 }
 
 function createNewDocument() {

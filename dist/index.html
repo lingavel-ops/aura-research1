@@ -12,8 +12,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-DKYFaPFe.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-9tHRyN4n.css">
+  <script type="module" crossorigin src="/assets/index-DMnvMpEo.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Bwe2gmvf.css">
 </head>
 
 <body>
@@ -615,12 +615,76 @@
               </div>
             </div>
 
-            <!-- Quick Suggestions below Search Bar -->
-            <div class="sample-prompts-list" style="margin-top: 20px;">
-              <div class="prompt-pill">Impact of AI on education</div>
-              <div class="prompt-pill">Applications of AI in Healthcare</div>
-              <div class="prompt-pill">Quantum computing algorithms for cryptography</div>
-              <div class="prompt-pill">Autonomous LLM agents in enterprise workflows</div>
+            <!-- Fill Document Prompt Option Card (Exact Match to Design) -->
+            <div class="doc-prompt-accordion-box" id="doc-prompt-accordion-box">
+              <!-- Header Bar / Toggle -->
+              <div class="doc-prompt-header" id="doc-prompt-header-toggle">
+                <div class="doc-prompt-header-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>Fill document prompt</span>
+                </div>
+                <div class="doc-prompt-toggle-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Accordion Body -->
+              <div class="doc-prompt-body">
+                <div class="doc-prompt-input-wrap">
+                  <textarea 
+                    id="doc-prompt-textarea" 
+                    class="doc-prompt-textarea" 
+                    placeholder="A literature review on renewable energy policy"
+                    rows="3"
+                  ></textarea>
+                </div>
+
+                <div class="doc-prompt-divider-line"></div>
+
+                <!-- Dynamic Prompt Feedback Row -->
+                <div class="doc-prompt-feedback-row weak" id="doc-prompt-feedback-row">
+                  <span class="prompt-feedback-label" id="prompt-feedback-label">Weak prompt:</span>
+                  <span class="prompt-feedback-text" id="prompt-feedback-text">Add more context for higher quality generations</span>
+                </div>
+
+                <!-- Or Also Sub-Divider -->
+                <div class="doc-prompt-subdivider">
+                  <span>or also</span>
+                </div>
+
+                <!-- Import from Word (.docx) Card -->
+                <div class="card-action-import-word" id="card-action-import-word" title="Import from Word (.docx)">
+                  <div class="import-word-left">
+                    <div class="word-badge-icon">
+                      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="6" fill="#185ABD"/>
+                        <path d="M7 8.5L9.6 20H11.8L13.8 11.2L15.8 20H18L20.6 8.5H18.4L16.9 16.2L14.8 8.5H12.8L10.7 16.2L9.2 8.5H7Z" fill="white"/>
+                      </svg>
+                    </div>
+                    <div class="import-word-meta">
+                      <div class="import-word-title">Import from Word (.docx)</div>
+                      <div class="import-word-sub">Import your work and improve it with AI</div>
+                    </div>
+                  </div>
+                  <div class="import-word-chevron">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Footer with Next Button -->
+                <div class="doc-prompt-footer">
+                  <button type="button" class="btn-doc-prompt-next" id="btn-doc-prompt-next">
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -648,7 +712,7 @@
           <!-- ==========================================
              RESEARCH RESULTS WORKSPACE (Tabbed)
              ========================================== -->
-          <div class="results-workspace active" id="results-workspace" style="margin-top: 36px;">
+          <div class="results-workspace" id="results-workspace" style="margin-top: 36px;">
 
             <!-- Workspace Header -->
             <div class="workspace-top-bar">
@@ -724,15 +788,7 @@
 
             <!-- Workspace Navigation Bar (Tabs) -->
             <div class="workspace-tabs-nav">
-              <button class="workspace-tab-btn active" data-tab="overview">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="20" x2="18" y2="10"></line>
-                  <line x1="12" y1="20" x2="12" y2="4"></line>
-                  <line x1="6" y1="20" x2="6" y2="14"></line>
-                </svg>
-                <span>Overview</span>
-              </button>
-              <button class="workspace-tab-btn" data-tab="papers">
+              <button class="workspace-tab-btn active" data-tab="papers">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
@@ -774,8 +830,7 @@
             </div>
 
             <!-- Workspace Panels -->
-            <div class="tab-panel active" id="tab-panel-overview"></div>
-            <div class="tab-panel" id="tab-panel-papers"></div>
+            <div class="tab-panel active" id="tab-panel-papers"></div>
             <div class="tab-panel" id="tab-panel-documents"></div>
             <div class="tab-panel" id="tab-panel-sources"></div>
             <div class="tab-panel" id="tab-panel-chat"></div>
