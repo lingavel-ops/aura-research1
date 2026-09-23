@@ -28,7 +28,9 @@ const state = {
   pendingSuggestedDomain: null,
   isResearchRunning: false,
   dedicatedChatHistory: [],
-  isChatPending: false
+  isChatPending: false,
+  savedSubTab: 'saved', // 'saved' (default) or 'history'
+  savedSearchQuery: ''
 };
 
 // Common SVG Icons
@@ -217,6 +219,19 @@ const globalAiClient = {
 };
 
 /**
+ * Escape HTML to prevent injection and render safe text in dynamic lists.
+ */
+function escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Render Markdown text into rich, safe HTML for chat bubbles.
  * Supports code blocks with copy buttons, inline code, bold, lists, and headings.
  */
@@ -311,6 +326,7 @@ function init() {
   renderFolderUI();
   renderStructureVisualizer();
   renderDocumentLibrary();
+  renderRecentDocumentsDrawer();
   renderPapersList();
   renderHistoryView();
   renderSavedView();
@@ -364,14 +380,20 @@ function cacheDomElements() {
   // Bottom Left Folder Management
   elements.btnBottomFolderManager = document.getElementById('btn-bottom-folder-manager');
   elements.bottomFolderName = document.getElementById('bottom-folder-name');
+  elements.folderPopoverSearch = document.getElementById('folder-popover-search');
+  elements.folderPopoverTotalBadge = document.getElementById('folder-popover-total-badge');
   
   // Main Search Elements
   elements.mainResearchInput = document.getElementById('main-research-input');
   elements.mainResearchSubmitBtn = document.getElementById('main-research-submit-btn');
   elements.mainResearchClearBtn = document.getElementById('main-research-clear-btn');
   elements.samplePromptPills = document.querySelectorAll('.prompt-pill');
-  elements.btnProToggle = document.getElementById('btn-pro-toggle');
-  elements.btnDeepResearchToggle = document.getElementById('btn-deep-research-toggle');
+  elements.btnSearchModeTrigger = document.getElementById('btn-search-mode-trigger');
+  elements.searchModePopover = document.getElementById('search-mode-popover');
+  elements.searchModeDropdownWrap = document.getElementById('search-mode-dropdown-wrap');
+  elements.currentModeLabel = document.getElementById('current-mode-label');
+  elements.currentModeProTag = document.getElementById('current-mode-pro-tag');
+  elements.currentModeIcon = document.getElementById('current-mode-icon');
   elements.btnGlobeFilter = document.getElementById('btn-globe-filter');
   elements.globeSourcesPopover = document.getElementById('globe-sources-popover');
   elements.btnSearchAttach = document.getElementById('btn-search-attach');
@@ -398,6 +420,7 @@ function cacheDomElements() {
   elements.resultDate = document.getElementById('result-date');
   elements.resultQuery = document.getElementById('result-query-meta');
   elements.btnSaveResearch = document.getElementById('btn-save-research');
+  elements.btnMoveResearch = document.getElementById('btn-move-research');
   elements.btnCopyResearch = document.getElementById('btn-copy-research');
   elements.btnExportResearch = document.getElementById('btn-export-research');
   elements.btnShareResearch = document.getElementById('btn-share-research');
@@ -415,9 +438,15 @@ function cacheDomElements() {
   elements.domainDetectModal = document.getElementById('modal-domain-detect');
   elements.shareModal = document.getElementById('modal-share');
   elements.exportModal = document.getElementById('modal-export');
+  elements.modalSmartFolderSuggest = document.getElementById('modal-smart-folder-suggest');
+  elements.modalDuplicateResearch = document.getElementById('modal-duplicate-research');
+  elements.modalRenameFolder = document.getElementById('modal-rename-folder');
+  elements.modalDeleteFolder = document.getElementById('modal-delete-folder');
+  elements.modalMoveResearch = document.getElementById('modal-move-research');
   
   // Forms
   elements.createFolderForm = document.getElementById('create-folder-form');
+  elements.formRenameFolder = document.getElementById('form-rename-folder');
   elements.newResearchForm = document.getElementById('start-new-research-form');
   
   // Sidebar Navigation
@@ -431,9 +460,18 @@ function cacheDomElements() {
   elements.railBtnDocuments = document.getElementById('rail-btn-documents');
   elements.railBtnPapers = document.getElementById('rail-btn-papers');
   elements.railBtnChat = document.getElementById('rail-btn-chat');
-  elements.railBtnTasks = document.getElementById('rail-btn-tasks');
-  elements.railBtnHistory = document.getElementById('rail-btn-history');
+  elements.railBtnTasks = document.getElementById('rail-btn-tasks'); // Unified Saved & History
   elements.railBtnResearchers = document.getElementById('rail-btn-researchers');
+
+  // Unified Saved & History Elements
+  elements.savedViewHeading = document.getElementById('saved-view-heading');
+  elements.savedHistorySearchInput = document.getElementById('saved-history-search-input');
+  elements.btnClearSavedHistorySearch = document.getElementById('btn-clear-saved-history-search');
+  elements.tabBtnSaved = document.getElementById('tab-btn-saved');
+  elements.tabBtnHistory = document.getElementById('tab-btn-history');
+  elements.savedTotalCountBadge = document.getElementById('saved-total-count-badge');
+  elements.historyTotalCountBadge = document.getElementById('history-total-count-badge');
+  elements.savedItemsContainer = document.getElementById('saved-items-container');
   
   // Jenni AI Style AI Research Workspace Elements
   elements.sidebarResearchNav = document.getElementById('sidebar-research-nav');
@@ -552,8 +590,17 @@ function applyTheme(theme) {
   localStorage.setItem('aurqo_theme', theme);
 }
 
-// Folder Management & UI
-function renderFolderUI() {
+// Dynamic Folder Research Counts
+function getFolderResearchCount(folderId) {
+  return Object.values(state.researchItems).filter(r => r.folderId === folderId && r.saved).length;
+}
+
+function getTotalResearchCount() {
+  return Object.values(state.researchItems).filter(r => r.saved).length;
+}
+
+// Folder Management & UI (Strictly 5 Actions: Open, Rename, Save/Search, Move, Delete)
+function renderFolderUI(searchFilter = '') {
   const activeFolder = getActiveFolder();
   
   // Update Bottom left folder button & banner
@@ -566,27 +613,143 @@ function renderFolderUI() {
       <span>${activeFolder.name}</span>
     `;
   }
+
+  // Update total badge in folder popover
+  const totalBadge = document.getElementById('folder-popover-total-badge');
+  if (totalBadge) {
+    totalBadge.textContent = `${state.folders.length} folders`;
+  }
   
+  // Filter folders by search query
+  const q = (searchFilter || '').toLowerCase().trim();
+  const filteredFolders = state.folders.filter(f => 
+    !q || f.name.toLowerCase().includes(q) || (f.domain && f.domain.toLowerCase().includes(q))
+  );
+
   // Update Folder Popover list
   if (elements.folderPopoverList) {
-    elements.folderPopoverList.innerHTML = state.folders.map(folder => `
-      <div class="folder-popover-item ${folder.id === state.activeFolderId ? 'active' : ''}" data-folder-id="${folder.id}">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          ${ICONS.folder}
-          <span>${folder.name}</span>
+    if (filteredFolders.length === 0) {
+      elements.folderPopoverList.innerHTML = `
+        <div style="padding: 16px 8px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+          No folders match "${searchFilter}"
         </div>
-        <span style="font-size: 0.76rem; opacity: 0.7;">${folder.documentCount || 0} docs</span>
-      </div>
-    `).join('');
+      `;
+    } else {
+      elements.folderPopoverList.innerHTML = filteredFolders.map(folder => {
+        const count = getFolderResearchCount(folder.id);
+        const isActive = folder.id === state.activeFolderId;
+        return `
+          <div class="folder-popover-item ${isActive ? 'active' : ''}" data-folder-id="${folder.id}">
+            <div class="folder-item-left btn-select-folder-row" title="Open ${folder.name}">
+              ${ICONS.folder}
+              <span class="folder-item-name">${folder.name}</span>
+            </div>
+            <div class="folder-item-right">
+              <span class="folder-item-count">${count} ${count === 1 ? 'research' : 'researches'}</span>
+              <button type="button" class="btn-folder-dots" data-folder-id="${folder.id}" title="Folder actions">
+                ⋯
+              </button>
+            </div>
+            <!-- 5 Main Actions Dropdown Context Menu -->
+            <div class="folder-dots-menu" id="folder-menu-${folder.id}">
+              <div class="folder-dots-menu-item action-open-folder" data-folder-id="${folder.id}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <span>Open</span>
+              </div>
+              <div class="folder-dots-menu-item action-rename-folder" data-folder-id="${folder.id}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span>Rename</span>
+              </div>
+              <div class="folder-dots-menu-item action-savesearch-folder" data-folder-id="${folder.id}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span>Save / Search</span>
+              </div>
+              <div class="folder-dots-menu-item action-move-folder" data-folder-id="${folder.id}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l4-4 4 4"></path><path d="M9 5v12"></path><path d="M19 15l-4 4-4-4"></path><path d="M15 19V7"></path></svg>
+                <span>Move</span>
+              </div>
+              <div class="folder-dots-menu-item danger action-delete-folder" data-folder-id="${folder.id}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>Delete</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-    // Attach click events
-    elements.folderPopoverList.querySelectorAll('.folder-popover-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const folderId = item.getAttribute('data-folder-id');
-        setActiveFolder(folderId);
-        elements.folderPopover.classList.remove('active');
+      // Bind folder selection clicks
+      elements.folderPopoverList.querySelectorAll('.btn-select-folder-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          const item = row.closest('.folder-popover-item');
+          const folderId = item.getAttribute('data-folder-id');
+          setActiveFolder(folderId);
+          elements.folderPopover.classList.remove('active');
+        });
       });
-    });
+
+      // Bind ⋯ Context Menu triggers
+      elements.folderPopoverList.querySelectorAll('.btn-folder-dots').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const folderId = btn.getAttribute('data-folder-id');
+          const menu = document.getElementById(`folder-menu-${folderId}`);
+          document.querySelectorAll('.folder-dots-menu').forEach(m => {
+            if (m !== menu) m.classList.remove('active');
+          });
+          if (menu) menu.classList.toggle('active');
+        });
+      });
+
+      // Bind Action 1: Open
+      elements.folderPopoverList.querySelectorAll('.action-open-folder').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const folderId = btn.getAttribute('data-folder-id');
+          setActiveFolder(folderId);
+          elements.folderPopover.classList.remove('active');
+        });
+      });
+
+      // Bind Action 2: Rename
+      elements.folderPopoverList.querySelectorAll('.action-rename-folder').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const folderId = btn.getAttribute('data-folder-id');
+          elements.folderPopover.classList.remove('active');
+          openRenameFolderModal(folderId);
+        });
+      });
+
+      // Bind Action 3: Save / Search
+      elements.folderPopoverList.querySelectorAll('.action-savesearch-folder').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const folderId = btn.getAttribute('data-folder-id');
+          elements.folderPopover.classList.remove('active');
+          handleFolderSaveOrSearch(folderId);
+        });
+      });
+
+      // Bind Action 4: Move
+      elements.folderPopoverList.querySelectorAll('.action-move-folder').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const folderId = btn.getAttribute('data-folder-id');
+          elements.folderPopover.classList.remove('active');
+          openMoveResearchModal(state.activeResearchId, folderId);
+        });
+      });
+
+      // Bind Action 5: Delete
+      elements.folderPopoverList.querySelectorAll('.action-delete-folder').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const folderId = btn.getAttribute('data-folder-id');
+          elements.folderPopover.classList.remove('active');
+          openDeleteFolderModal(folderId);
+        });
+      });
+    }
   }
 
   // Populate folder dropdowns in forms
@@ -606,7 +769,8 @@ function setActiveFolder(folderId) {
   renderDocumentLibrary();
   renderPapersList();
   renderDedicatedChat();
-  showToast(`Switched active folder to: ${folder.name}`, ICONS.folder);
+  renderSavedView();
+  showToast(`Active folder: ${folder.name}`, ICONS.folder);
 }
 
 function createNewFolder(name, domain, description) {
@@ -624,10 +788,293 @@ function createNewFolder(name, domain, description) {
   
   state.folders.push(newFolder);
   setActiveFolder(newFolderId);
-  renderFolderUI();
-  renderDocumentLibrary();
   closeModal(elements.createFolderModal);
   showToast(`Created research folder: "${name}"`, ICONS.check);
+}
+
+// 5 Main Folder Action Handlers
+function openRenameFolderModal(folderId) {
+  const folder = state.folders.find(f => f.id === folderId);
+  if (!folder) return;
+  const idInput = document.getElementById('rename-folder-id');
+  const nameInput = document.getElementById('rename-folder-input');
+  if (idInput) idInput.value = folder.id;
+  if (nameInput) {
+    nameInput.value = folder.name;
+    setTimeout(() => { nameInput.focus(); nameInput.select(); }, 100);
+  }
+  openModal(elements.modalRenameFolder);
+}
+
+function handleFolderRename(folderId, newName) {
+  const folder = state.folders.find(f => f.id === folderId);
+  if (!folder || !newName || !newName.trim()) return;
+  const cleanName = newName.trim();
+  folder.name = cleanName;
+
+  // Update researchItems and documents that reference folderName
+  Object.values(state.researchItems).forEach(r => {
+    if (r.folderId === folderId) r.folderName = cleanName;
+  });
+  state.documents.forEach(d => {
+    if (d.folderId === folderId) d.folderName = cleanName;
+  });
+
+  closeModal(elements.modalRenameFolder);
+  renderFolderUI();
+  renderStructureVisualizer();
+  renderDocumentLibrary();
+  renderSavedView();
+  if (state.researchItems[state.activeResearchId]) {
+    renderResearchWorkspace(state.researchItems[state.activeResearchId]);
+  }
+  showToast(`Folder renamed to "${cleanName}"`, ICONS.check);
+}
+
+function handleFolderSaveOrSearch(folderId) {
+  setActiveFolder(folderId);
+  const activeResearch = state.researchItems[state.activeResearchId];
+  if (activeResearch && !activeResearch.saved) {
+    finalizeSaveResearchItem(activeResearch, getActiveFolder());
+  } else {
+    switchView('dashboard');
+    if (elements.mainResearchInput) {
+      elements.mainResearchInput.focus();
+    }
+    showToast(`Ready to search in: ${getActiveFolder().name}`, ICONS.folder);
+  }
+}
+
+function openMoveResearchModal(researchId, targetPresetFolderId) {
+  const research = state.researchItems[researchId] || Object.values(state.researchItems)[0];
+  if (!research) {
+    showToast('No research item to move.', ICONS.file);
+    return;
+  }
+
+  const modal = elements.modalMoveResearch;
+  const titleEl = document.getElementById('move-modal-research-title');
+  const container = document.getElementById('move-folder-list-container');
+  const targetResearchIdInput = document.getElementById('move-target-research-id');
+
+  if (titleEl) titleEl.textContent = `Move "${research.title.length > 40 ? research.title.substring(0, 40) + '...' : research.title}" to:`;
+  if (targetResearchIdInput) targetResearchIdInput.value = research.id;
+
+  let chosenFolderId = targetPresetFolderId || state.folders.find(f => f.id !== research.folderId)?.id || state.folders[0]?.id;
+
+  if (container) {
+    container.innerHTML = state.folders.map(f => {
+      const isCurrent = f.id === research.folderId;
+      const isSelected = f.id === chosenFolderId;
+      const count = getFolderResearchCount(f.id);
+      return `
+        <div class="move-folder-item ${isSelected ? 'selected' : ''}" data-folder-id="${f.id}">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${ICONS.folder}
+            <div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">${f.name}</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted);">${count} saved researches • ${f.domain}</div>
+            </div>
+          </div>
+          ${isCurrent ? `<span class="folder-relevance-tag" style="background: var(--bg-pill); color: var(--text-muted);">Current Folder</span>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.move-folder-item').forEach(item => {
+      item.addEventListener('click', () => {
+        container.querySelectorAll('.move-folder-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        chosenFolderId = item.getAttribute('data-folder-id');
+      });
+    });
+  }
+
+  const confirmBtn = document.getElementById('btn-confirm-move-research');
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      if (chosenFolderId) {
+        moveResearchItemToFolder(research.id, chosenFolderId);
+        closeModal(modal);
+      }
+    };
+  }
+
+  openModal(modal);
+}
+
+function moveResearchItemToFolder(researchId, targetFolderId) {
+  const research = state.researchItems[researchId];
+  const targetFolder = state.folders.find(f => f.id === targetFolderId);
+  if (!research || !targetFolder) return;
+
+  research.folderId = targetFolder.id;
+  research.domain = targetFolder.domain;
+  research.saved = true;
+
+  state.activeFolderId = targetFolder.id;
+  renderFolderUI();
+  renderStructureVisualizer();
+  renderResearchWorkspace(research);
+  renderSavedView();
+  renderDocumentLibrary();
+
+  showToast(`Moved research to "${targetFolder.name}"`, ICONS.check);
+}
+
+function openDeleteFolderModal(folderId) {
+  if (state.folders.length <= 1) {
+    showToast('Cannot delete the only remaining folder.', ICONS.file);
+    return;
+  }
+  const folder = state.folders.find(f => f.id === folderId);
+  if (!folder) return;
+
+  const count = getFolderResearchCount(folderId);
+  const nameLabel = document.getElementById('delete-folder-name-label');
+  const countLabel = document.getElementById('delete-folder-count-label');
+  const idInput = document.getElementById('delete-folder-id');
+
+  if (nameLabel) nameLabel.textContent = folder.name;
+  if (countLabel) countLabel.textContent = `${count} ${count === 1 ? 'research' : 'researches'}`;
+  if (idInput) idInput.value = folder.id;
+
+  const confirmBtn = document.getElementById('btn-confirm-delete-folder');
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      deleteFolder(folder.id);
+      closeModal(elements.modalDeleteFolder);
+    };
+  }
+
+  openModal(elements.modalDeleteFolder);
+}
+
+function deleteFolder(folderId) {
+  const folderIndex = state.folders.findIndex(f => f.id === folderId);
+  if (folderIndex === -1) return;
+  const folderName = state.folders[folderIndex].name;
+
+  state.folders.splice(folderIndex, 1);
+
+  if (state.activeFolderId === folderId) {
+    state.activeFolderId = state.folders[0]?.id || '';
+  }
+
+  // Remove or reassign orphaned items
+  Object.keys(state.researchItems).forEach(rId => {
+    if (state.researchItems[rId].folderId === folderId) {
+      delete state.researchItems[rId];
+    }
+  });
+
+  renderFolderUI();
+  renderStructureVisualizer();
+  renderDocumentLibrary();
+  renderSavedView();
+  showToast(`Folder "${folderName}" deleted`, ICONS.check);
+}
+
+// Smart Folder Matching Algorithm across Multiple Folders
+function detectRelatedFolders(query, papers = []) {
+  if (!query || typeof query !== 'string') return [];
+  const q = query.toLowerCase().trim();
+  const stopWords = new Set(['in', 'the', 'of', 'and', 'for', 'to', 'a', 'an', 'on', 'with', 'by', 'at', 'from', 'as', 'is', 'are', 'was', 'were', 'about', 'impact', 'applications', 'application']);
+  const queryTokens = q.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !stopWords.has(t));
+
+  const paperTokens = [];
+  if (Array.isArray(papers)) {
+    papers.slice(0, 4).forEach(p => {
+      if (p.concepts && Array.isArray(p.concepts)) {
+        p.concepts.forEach(c => paperTokens.push(String(c).toLowerCase()));
+      }
+      if (p.title) {
+        p.title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).forEach(t => {
+          if (t.length > 3 && !stopWords.has(t)) paperTokens.push(t);
+        });
+      }
+    });
+  }
+
+  const matches = [];
+
+  state.folders.forEach(folder => {
+    let score = 0;
+    const folderNameTokens = folder.name.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !stopWords.has(t));
+    const domainTokens = (folder.domain || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length > 2 && !stopWords.has(t));
+
+    const domainKw = (THAMILI_INITIAL_DATA.domainKeywords && THAMILI_INITIAL_DATA.domainKeywords[folder.domain]) || [];
+    const lowerKw = domainKw.map(k => k.toLowerCase());
+
+    // 1. Folder name tokens (weight: 4)
+    queryTokens.forEach(qt => {
+      if (folderNameTokens.includes(qt)) score += 4;
+      else if (folderNameTokens.some(fnt => fnt.includes(qt) || qt.includes(fnt))) score += 2;
+    });
+
+    // 2. Domain tokens (weight: 3)
+    queryTokens.forEach(qt => {
+      if (domainTokens.includes(qt)) score += 3;
+      else if (domainTokens.some(dt => dt.includes(qt) || qt.includes(dt))) score += 1.5;
+    });
+
+    // 3. Keyword list matches (weight: 3)
+    lowerKw.forEach(kw => {
+      if (q.includes(kw)) score += 3;
+    });
+
+    // 4. Paper concepts / title matches (weight: 1)
+    paperTokens.forEach(pt => {
+      if (folderNameTokens.includes(pt) || domainTokens.includes(pt)) score += 1;
+    });
+
+    if (score > 0) {
+      matches.push({ folder, score });
+    }
+  });
+
+  matches.sort((a, b) => b.score - a.score);
+  return matches;
+}
+
+// Duplicate / Similar Research Detection
+function findSimilarResearchInFolder(query, title, folderId) {
+  if (!folderId) return null;
+  const itemsInFolder = Object.values(state.researchItems).filter(r => r.folderId === folderId && r.saved);
+  if (itemsInFolder.length === 0) return null;
+
+  const normalize = (str) => (str || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const targetWords = new Set([...normalize(query), ...normalize(title)]);
+  if (targetWords.size === 0) return null;
+
+  let bestMatch = null;
+  let highestScore = 0;
+
+  itemsInFolder.forEach(item => {
+    const itemWords = new Set([...normalize(item.query), ...normalize(item.title)]);
+    if (itemWords.size === 0) return;
+
+    let intersection = 0;
+    targetWords.forEach(w => {
+      if (itemWords.has(w)) intersection++;
+    });
+
+    const union = new Set([...targetWords, ...itemWords]).size;
+    const similarity = union > 0 ? (intersection / union) : 0;
+
+    const queryNorm = (query || '').toLowerCase().trim();
+    const itemQueryNorm = (item.query || '').toLowerCase().trim();
+    const isSubstring = (queryNorm.length > 8 && itemQueryNorm.includes(queryNorm)) || (itemQueryNorm.length > 8 && queryNorm.includes(itemQueryNorm));
+
+    const finalScore = isSubstring ? Math.max(similarity, 0.85) : similarity;
+
+    if (finalScore >= 0.65 && finalScore > highestScore) {
+      highestScore = finalScore;
+      bestMatch = { item, score: finalScore };
+    }
+  });
+
+  return bestMatch ? bestMatch.item : null;
 }
 
 // Domain Auto-Detection
@@ -681,12 +1128,10 @@ const RESEARCH_STAGES = [
 function startResearchFlow(query, targetFolderId) {
   if (!query || query.trim() === '') return;
   
-  // Check Domain Auto-Detection
   const detectedDomain = detectDomainFromQuery(query);
   const activeFolder = getActiveFolder();
   
   if (detectedDomain && detectedDomain !== activeFolder.domain && !targetFolderId) {
-    // Show Domain Auto-Detection Modal
     state.pendingResearchQuery = query;
     state.pendingSuggestedDomain = detectedDomain;
     
@@ -713,13 +1158,10 @@ function executeResearchPipeline(query, folderId) {
   elements.loaderQueryBadge.textContent = `Query: "${query}"`;
   elements.progressBarFill.style.width = '0%';
   
-  // Scroll smoothly to loading area
   elements.researchLoadingOverlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // Initiate paper fetch from Node.js Express backend proxying OpenAlex
   const backendPapersPromise = fetchPapersFromBackend(query);
 
-  // Render loading stages HTML
   elements.loadingStagesContainer.innerHTML = RESEARCH_STAGES.map((stage, idx) => `
     <div class="loading-stage-item ${idx === 0 ? 'in-progress' : 'pending'}" id="stage-item-${idx}">
       <div class="stage-icon-wrap">${idx + 1}</div>
@@ -767,11 +1209,11 @@ function executeResearchPipeline(query, folderId) {
   stepNextStage();
 }
 
+// Intercept Pipeline to ALWAYS ask/suggest user confirmation (NO silent auto-saving!)
 function finishResearchPipeline(query, folder, fetchedPapers = []) {
   state.isResearchRunning = false;
   elements.researchLoadingOverlay.classList.remove('active');
   
-  // Generate or match research item
   const researchId = 'research-' + Date.now();
   const cleanTitle = query.length > 55 ? query.substring(0, 55) + '...' : query;
   
@@ -783,7 +1225,6 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
     const topPaperAuthor = (topPaper.authors || 'Academic Researcher').split(',')[0];
     const totalCitations = fetchedPapers.reduce((sum, p) => sum + (p.citations || p.citedByCount || 0), 0);
 
-    // Map OpenAlex works from backend to the application's paper schema
     const mappedPapers = fetchedPapers.map((p, idx) => ({
       id: p.id || `paper-${Date.now()}-${idx}`,
       title: p.title || 'Untitled Research',
@@ -810,7 +1251,7 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
       title: cleanTitle,
       query: query,
       date: new Date().toISOString().split('T')[0],
-      saved: true,
+      saved: false, // NOT saved yet!
       overview: {
         summary: `Comprehensive academic research synthesis on "${query}" powered by OpenAlex academic index. Key literature highlights foundational breakthroughs including "${topPaperTitle}" by ${topPaperAuthor} with an aggregate impact of ${totalCitations.toLocaleString()} citations across the indexed peer-reviewed corpus in ${folder.domain}.`,
         takeaways: [
@@ -878,11 +1319,10 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
           timestamp: "Just now"
         }
       ],
-      notes: `Research inquiry on "${cleanTitle}" automatically indexed ${fetchedPapers.length} OpenAlex papers in ${folder.name}.`,
+      notes: `Research inquiry on "${cleanTitle}" indexed ${fetchedPapers.length} OpenAlex papers in ${folder.name}.`,
       documents: []
     };
 
-    // Prepend newly discovered papers to global papers state for "Find My Papers"
     mappedPapers.forEach(rp => {
       if (!state.papers.some(existing => existing.title.toLowerCase() === rp.title.toLowerCase())) {
         state.papers.unshift(rp);
@@ -895,20 +1335,22 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
     newResearch.query = query;
     newResearch.folderId = folder.id;
     newResearch.domain = folder.domain;
+    newResearch.saved = false;
   } else if (query.toLowerCase().includes('health') || query.toLowerCase().includes('medical')) {
     newResearch = JSON.parse(JSON.stringify(THAMILI_INITIAL_DATA.researchItems['applications-of-ai-in-healthcare']));
     newResearch.id = researchId;
     newResearch.query = query;
     newResearch.folderId = folder.id;
     newResearch.domain = folder.domain;
+    newResearch.saved = false;
   } else if (query.toLowerCase().includes('crypto') || query.toLowerCase().includes('quantum')) {
     newResearch = JSON.parse(JSON.stringify(THAMILI_INITIAL_DATA.researchItems['quantum-computing-cryptography']));
     newResearch.id = researchId;
     newResearch.query = query;
     newResearch.folderId = folder.id;
     newResearch.domain = folder.domain;
+    newResearch.saved = false;
   } else {
-    // Dynamic Synthesized Research Object
     newResearch = {
       id: researchId,
       folderId: folder.id,
@@ -916,7 +1358,7 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
       title: cleanTitle,
       query: query,
       date: new Date().toISOString().split('T')[0],
-      saved: true,
+      saved: false,
       overview: {
         summary: `Comprehensive research synthesis on "${query}". The integration of advanced computational models and empirical data analysis reveals significant efficiency gains, structural breakthroughs, and automated knowledge pipelines in the domain of ${folder.domain}.`,
         takeaways: [
@@ -986,7 +1428,7 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
           journal: "Journal of Applied AI & Engineering",
           year: "2025",
           citations: 74,
-          abstract: `We investigate the integration of transformer and diffusion architectures across specialized ${folder.domain} datasets, demonstrating significant empirical gains over baseline heuristic approaches.`,
+          abstract: `We investigate the integration of transformer architectures across specialized ${folder.domain} datasets.`,
           downloadUrl: "#",
           domain: folder.domain
         }
@@ -1005,35 +1447,284 @@ function finishResearchPipeline(query, folder, fetchedPapers = []) {
         },
         {
           sender: "ai",
-          text: `Based on the latest analysis in your **${folder.name}** folder:\n\n1. **Accelerated Synthesis**: Research confirms consistent efficiency and diagnostic improvements.\n2. **Verified Sources**: 2 high-impact academic sources and peer-reviewed papers have been indexed.\n3. **Actionable Next Steps**: You can explore related topics, export this study to Word/PDF, or chat further about specific sections.`,
+          text: `Based on the latest analysis in **${folder.name}**:\n\n1. **Accelerated Synthesis**: Research confirms consistent efficiency and diagnostic improvements.\n2. **Verified Sources**: Academic sources and peer-reviewed papers have been indexed.\n3. **Actionable Next Steps**: You can explore related topics, export this study to Word/PDF, or chat further about specific sections.`,
           timestamp: "Just now"
         }
       ],
-      notes: `Initial research notes on ${cleanTitle}. Prepared automatically inside ${folder.name}.`,
+      notes: `Initial research notes on ${cleanTitle}. Prepared inside ${folder.name}.`,
       documents: []
     };
   }
 
-  // Save to State
+  // Set as current active research in workspace
   state.researchItems[researchId] = newResearch;
   state.activeResearchId = researchId;
+
+  // Automatically save & index in Documents left menu bar
+  addDocumentToDrawer({
+    id: researchId,
+    researchId: researchId,
+    title: cleanTitle,
+    type: 'research',
+    folderId: folder.id,
+    folderName: folder.name,
+    openedTime: 'Just now',
+    words: 1450,
+    prompt: query
+  });
+
+  // Run Smart Folder Matching across ALL folders
+  const matchedFolders = detectRelatedFolders(query, newResearch.papers || []);
   
-  // Add to folder document count
-  folder.documentCount = (folder.documentCount || 0) + 1;
-  renderFolderUI();
+  promptSmartFolderSelection({
+    newResearch,
+    query,
+    matchedFolders,
+    defaultFolder: folder
+  });
+}
+
+// Smart Folder Suggestion Dialog (Handles single match or multi-folder rankings)
+function promptSmartFolderSelection({ newResearch, query, matchedFolders, defaultFolder }) {
+  const modal = elements.modalSmartFolderSuggest;
+  const titleEl = document.getElementById('smart-folder-modal-title');
+  const subEl = document.getElementById('smart-folder-modal-subtitle');
+  const queryEl = document.getElementById('smart-folder-query-text');
+  const container = document.getElementById('smart-folder-content-container');
+  const confirmBtn = document.getElementById('btn-smart-folder-confirm');
+  const skipBtn = document.getElementById('btn-smart-folder-skip');
+  const createNewBtn = document.getElementById('btn-smart-folder-create-new');
+
+  if (queryEl) queryEl.textContent = `"${query}"`;
+
+  let selectedFolderId = defaultFolder ? defaultFolder.id : state.activeFolderId;
+
+  if (matchedFolders.length === 1) {
+    const match = matchedFolders[0];
+    selectedFolderId = match.folder.id;
+    const count = getFolderResearchCount(match.folder.id);
+
+    if (titleEl) titleEl.textContent = 'Save Research to Matching Folder';
+    if (subEl) subEl.textContent = `AI found a matching folder for this research`;
+
+    container.innerHTML = `
+      <div class="folder-smart-match-card selected" data-folder-id="${match.folder.id}">
+        <div class="folder-smart-match-left">
+          ${ICONS.folder}
+          <div>
+            <div class="folder-smart-match-name">${match.folder.name}</div>
+            <div class="folder-smart-match-meta">${count} saved ${count === 1 ? 'research' : 'researches'} • ${match.folder.domain}</div>
+          </div>
+        </div>
+        <span class="folder-relevance-tag">Suggested Match</span>
+      </div>
+      <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 8px;">
+        Save this search as a new research item inside <b>${match.folder.name}</b>?
+      </div>
+    `;
+  } else if (matchedFolders.length > 1) {
+    selectedFolderId = matchedFolders[0].folder.id;
+    if (titleEl) titleEl.textContent = 'Select Matching Research Folder';
+    if (subEl) subEl.textContent = `Your research query matched ${matchedFolders.length} folders`;
+
+    container.innerHTML = `
+      <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 8px;">
+        Choose the folder you would like to save this research into:
+      </div>
+      <div class="folder-multi-match-list">
+        ${matchedFolders.map((m, idx) => {
+          const count = getFolderResearchCount(m.folder.id);
+          const isSelected = idx === 0;
+          return `
+            <div class="folder-smart-match-card ${isSelected ? 'selected' : ''}" data-folder-id="${m.folder.id}">
+              <div class="folder-smart-match-left">
+                ${ICONS.folder}
+                <div>
+                  <div class="folder-smart-match-name">${m.folder.name}</div>
+                  <div class="folder-smart-match-meta">${count} saved ${count === 1 ? 'research' : 'researches'} • ${m.folder.domain}</div>
+                </div>
+              </div>
+              <span class="folder-relevance-tag">${idx === 0 ? 'Best Match' : 'Related'}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    container.querySelectorAll('.folder-smart-match-card').forEach(card => {
+      card.addEventListener('click', () => {
+        container.querySelectorAll('.folder-smart-match-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedFolderId = card.getAttribute('data-folder-id');
+      });
+    });
+  } else {
+    selectedFolderId = state.activeFolderId;
+    if (titleEl) titleEl.textContent = 'Choose Folder to Save Research';
+    if (subEl) subEl.textContent = `Save into an existing folder or create a new one`;
+
+    container.innerHTML = `
+      <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 8px;">
+        Select destination folder:
+      </div>
+      <div class="folder-multi-match-list">
+        ${state.folders.map(f => {
+          const count = getFolderResearchCount(f.id);
+          const isSelected = f.id === selectedFolderId;
+          return `
+            <div class="folder-smart-match-card ${isSelected ? 'selected' : ''}" data-folder-id="${f.id}">
+              <div class="folder-smart-match-left">
+                ${ICONS.folder}
+                <div>
+                  <div class="folder-smart-match-name">${f.name}</div>
+                  <div class="folder-smart-match-meta">${count} saved ${count === 1 ? 'research' : 'researches'} • ${f.domain}</div>
+                </div>
+              </div>
+              ${isSelected ? `<span class="folder-relevance-tag" style="background: rgba(99, 102, 241, 0.12); color: var(--primary-indigo);">Current</span>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    container.querySelectorAll('.folder-smart-match-card').forEach(card => {
+      card.addEventListener('click', () => {
+        container.querySelectorAll('.folder-smart-match-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedFolderId = card.getAttribute('data-folder-id');
+      });
+    });
+  }
+
+  // Button Action: Don't Save Yet
+  if (skipBtn) {
+    skipBtn.onclick = () => {
+      closeModal(modal);
+      newResearch.saved = false;
+      renderResearchWorkspace(newResearch);
+      showToast('Research loaded (not saved to folder)', ICONS.folder);
+    };
+  }
+
+  // Button Action: Create New Folder from Suggestion Modal
+  if (createNewBtn) {
+    createNewBtn.onclick = () => {
+      closeModal(modal);
+      openModal(elements.createFolderModal);
+    };
+  }
+
+  // Button Action: Confirm Save to Folder
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      commitResearchSave(newResearch, selectedFolderId, query);
+    };
+  }
+
+  openModal(modal);
+}
+
+function commitResearchSave(research, targetFolderId, query) {
+  closeModal(elements.modalSmartFolderSuggest);
+
+  const targetFolder = state.folders.find(f => f.id === targetFolderId) || getActiveFolder();
+
+  // Duplicate / Similar Research Detection in destination folder
+  const duplicate = findSimilarResearchInFolder(query, research.title, targetFolderId);
+
+  if (duplicate) {
+    showDuplicateModal({
+      duplicateItem: duplicate,
+      newResearch: research,
+      targetFolder: targetFolder
+    });
+    return;
+  }
+
+  // Finalize Save as separate research item
+  finalizeSaveResearchItem(research, targetFolder);
+}
+
+function showDuplicateModal({ duplicateItem, newResearch, targetFolder }) {
+  const modal = elements.modalDuplicateResearch;
+  const folderNameEl = document.getElementById('dup-modal-folder-name');
+  const titleEl = document.getElementById('dup-existing-title');
+  const metaEl = document.getElementById('dup-existing-meta');
+  const openExistingBtn = document.getElementById('btn-dup-open-existing');
+  const saveAnywayBtn = document.getElementById('btn-dup-save-anyway');
+  const cancelBtn = document.getElementById('btn-dup-cancel');
+
+  if (folderNameEl) folderNameEl.textContent = targetFolder.name;
+  if (titleEl) titleEl.textContent = duplicateItem.title;
+  if (metaEl) metaEl.textContent = `Saved on ${duplicateItem.date || 'Recent'} • Query: "${duplicateItem.query || duplicateItem.title}"`;
+
+  if (openExistingBtn) {
+    openExistingBtn.onclick = () => {
+      closeModal(modal);
+      state.activeResearchId = duplicateItem.id;
+      state.activeFolderId = duplicateItem.folderId;
+      renderFolderUI();
+      renderResearchWorkspace(duplicateItem);
+      showToast(`Opened existing research: "${duplicateItem.title}"`, ICONS.file);
+    };
+  }
+
+  if (saveAnywayBtn) {
+    saveAnywayBtn.onclick = () => {
+      closeModal(modal);
+      finalizeSaveResearchItem(newResearch, targetFolder);
+    };
+  }
+
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      closeModal(modal);
+      newResearch.saved = false;
+      renderResearchWorkspace(newResearch);
+      showToast('Research loaded (not saved to folder)', ICONS.folder);
+    };
+  }
+
+  openModal(modal);
+}
+
+function finalizeSaveResearchItem(research, targetFolder) {
+  research.saved = true;
+  research.folderId = targetFolder.id;
+  research.domain = targetFolder.domain;
   
+  state.activeFolderId = targetFolder.id;
+  state.activeResearchId = research.id;
+  state.researchItems[research.id] = research;
+
+  // Sync with Documents menu bar on the left
+  addDocumentToDrawer({
+    id: research.id,
+    researchId: research.id,
+    title: research.title,
+    type: 'research',
+    folderId: targetFolder.id,
+    folderName: targetFolder.name,
+    openedTime: 'Just now',
+    words: 1450,
+    prompt: research.query || research.title
+  });
+
   // Add to History
   if (state.history && state.history[0]) {
     state.history[0].items.unshift({
-      id: researchId,
-      title: newResearch.title,
+      id: research.id,
+      title: research.title,
       time: "Just now"
     });
     renderHistoryView();
   }
 
-  renderResearchWorkspace(newResearch);
-  showToast(`Research organized into "${folder.name}"`, ICONS.folder);
+  renderFolderUI();
+  renderResearchWorkspace(research);
+  renderSavedView();
+  renderDocumentLibrary();
+  showToast(`Saved "${research.title}" into ${targetFolder.name} & Documents menu`, ICONS.check);
 }
 
 // Research Results Workspace Rendering
@@ -1486,23 +2177,26 @@ function renderDocumentLibrary() {
   if (!foldersGrid) return;
 
   // Render Folder Cards
-  foldersGrid.innerHTML = state.folders.map(folder => `
-    <div class="folder-card ${folder.id === state.activeFolderId ? 'active-folder-card' : ''}" data-folder-id="${folder.id}">
-      <div class="folder-card-top">
-        <div class="folder-card-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+  foldersGrid.innerHTML = state.folders.map(folder => {
+    const count = getFolderResearchCount(folder.id);
+    return `
+      <div class="folder-card ${folder.id === state.activeFolderId ? 'active-folder-card' : ''}" data-folder-id="${folder.id}">
+        <div class="folder-card-top">
+          <div class="folder-card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <span class="badge-domain">${folder.domain}</span>
         </div>
-        <span class="badge-domain">${folder.domain}</span>
+        <div class="folder-card-name">${folder.name}</div>
+        <div class="folder-card-desc">${folder.description}</div>
+        <div class="folder-card-count">
+          ${ICONS.file}
+          <span>${count} ${count === 1 ? 'Research' : 'Researches'}</span>
+          ${folder.id === state.activeFolderId ? '<span style="margin-left: auto; color: var(--primary-indigo); font-weight: 700;">Active</span>' : ''}
+        </div>
       </div>
-      <div class="folder-card-name">${folder.name}</div>
-      <div class="folder-card-desc">${folder.description}</div>
-      <div class="folder-card-count">
-        ${ICONS.file}
-        <span>${folder.documentCount || 0} Documents</span>
-        ${folder.id === state.activeFolderId ? '<span style="margin-left: auto; color: var(--primary-indigo); font-weight: 700;">Active</span>' : ''}
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   foldersGrid.querySelectorAll('.folder-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -1780,126 +2474,266 @@ async function handleDedicatedChatSend() {
   scroll.scrollTop = scroll.scrollHeight;
 }
 
-// Dedicated View: History & Saved
-function renderHistoryView() {
-  const container = document.getElementById('history-timeline-container');
+// Dedicated View: Unified Saved Research & History
+function renderSavedView(activeTab = state.savedSubTab, searchQuery = state.savedSearchQuery) {
+  state.savedSubTab = activeTab;
+  state.savedSearchQuery = searchQuery;
+
+  const container = elements.savedItemsContainer || document.getElementById('saved-items-container');
+  const heading = elements.savedViewHeading || document.getElementById('saved-view-heading');
+  const tabBtnSaved = elements.tabBtnSaved || document.getElementById('tab-btn-saved');
+  const tabBtnHistory = elements.tabBtnHistory || document.getElementById('tab-btn-history');
+  const savedBadge = elements.savedTotalCountBadge || document.getElementById('saved-total-count-badge');
+  const historyBadge = elements.historyTotalCountBadge || document.getElementById('history-total-count-badge');
+  const clearBtn = elements.btnClearSavedHistorySearch || document.getElementById('btn-clear-saved-history-search');
+
+  if (clearBtn) {
+    clearBtn.style.display = searchQuery ? 'flex' : 'none';
+  }
+
+  // Calculate totals
+  const allSavedProjects = Object.values(state.researchItems).filter(r => r.saved);
+  const allSavedPapers = state.papers.filter(p => p.saved);
+  const totalSavedCount = allSavedProjects.length + allSavedPapers.length;
+
+  let totalHistoryCount = 0;
+  if (Array.isArray(state.history)) {
+    state.history.forEach(g => {
+      totalHistoryCount += (g.items ? g.items.length : 0);
+    });
+  }
+
+  if (savedBadge) savedBadge.textContent = totalSavedCount;
+  if (historyBadge) historyBadge.textContent = totalHistoryCount;
+
+  // Update tabs active state
+  if (tabBtnSaved) tabBtnSaved.classList.toggle('active', activeTab === 'saved');
+  if (tabBtnHistory) tabBtnHistory.classList.toggle('active', activeTab === 'history');
+
+  // Update heading
+  if (heading) {
+    heading.textContent = activeTab === 'saved' ? 'Saved Research' : 'Research History';
+  }
+
   if (!container) return;
 
-  container.innerHTML = state.history.map(group => `
-    <div class="history-section-group">
-      <div class="history-group-title">${group.group}</div>
-      <div class="history-domain-block">
-        <div class="history-domain-header">
-          ${ICONS.folder}
-          <span>${group.domain}</span>
-        </div>
-        ${group.items.map(item => `
-          <div class="history-item-row" data-research-id="${item.id}">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="color: var(--primary-indigo); font-size: 0.75rem;">●</span>
-              <span style="font-weight: 500; font-size: 0.92rem;">${item.title}</span>
-            </div>
-            <span style="font-size: 0.78rem; color: var(--text-light);">${item.time}</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+  const q = (searchQuery || '').trim().toLowerCase();
 
-  container.querySelectorAll('.history-item-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const researchId = row.getAttribute('data-research-id');
-      if (state.researchItems[researchId]) {
-        state.activeResearchId = researchId;
-        const research = state.researchItems[researchId];
-        state.activeFolderId = research.folderId;
-        renderFolderUI();
-        renderResearchWorkspace(research);
-        switchView('dashboard');
-        showToast(`Reopened research workspace: ${research.title}`, ICONS.file);
-      }
+  if (activeTab === 'saved') {
+    // Filter saved projects and papers
+    const savedProjects = allSavedProjects.filter(proj => {
+      if (!q) return true;
+      const folder = state.folders.find(f => f.id === proj.folderId) || getActiveFolder();
+      return (proj.title && proj.title.toLowerCase().includes(q)) ||
+             (proj.domain && proj.domain.toLowerCase().includes(q)) ||
+             (folder && folder.name && folder.name.toLowerCase().includes(q)) ||
+             (proj.query && proj.query.toLowerCase().includes(q));
     });
-  });
+
+    const savedPapers = allSavedPapers.filter(paper => {
+      if (!q) return true;
+      return (paper.title && paper.title.toLowerCase().includes(q)) ||
+             (paper.authors && paper.authors.toLowerCase().includes(q)) ||
+             (paper.source && paper.source.toLowerCase().includes(q)) ||
+             (paper.folderName && paper.folderName.toLowerCase().includes(q));
+    });
+
+    if (savedProjects.length === 0 && savedPapers.length === 0) {
+      container.innerHTML = `
+        <div class="saved-history-empty-state">
+          <div class="saved-history-empty-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="saved-history-empty-title">${q ? 'No matching saved items' : 'No saved research yet'}</div>
+          <div class="saved-history-empty-subtitle">${q ? `No saved workspaces or papers match "${escapeHtml(searchQuery)}". Try another keyword or clear the search.` : 'Click "Save Research" in any research workspace or paper card to save it here.'}</div>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+
+    if (savedProjects.length > 0) {
+      html += `
+        <div style="margin-bottom: 28px;">
+          <div style="font-size: 1.12rem; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">
+            Saved Research Workspaces (${savedProjects.length})
+          </div>
+          <div class="cards-list-grid">
+            ${savedProjects.map(proj => {
+              const folder = state.folders.find(f => f.id === proj.folderId) || getActiveFolder();
+              return `
+                <div class="paper-card">
+                  <div>
+                    <div class="card-top-meta">
+                      <span class="badge-domain">${escapeHtml(folder.name || proj.domain)}</span>
+                      <span class="badge-year">Date: ${escapeHtml(proj.date)}</span>
+                    </div>
+                    <div class="card-title" style="margin-top: 10px;">${escapeHtml(proj.title)}</div>
+                  </div>
+                  <div class="card-footer-actions">
+                    <button type="button" class="btn-card-action btn-reopen-saved" data-id="${proj.id}">Open Workspace →</button>
+                    <button type="button" class="btn-card-action btn-move-saved" data-id="${proj.id}">Move</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    if (savedPapers.length > 0) {
+      html += `
+        <div>
+          <div style="font-size: 1.12rem; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">
+            Saved Academic Papers (${savedPapers.length})
+          </div>
+          <div class="cards-list-grid">
+            ${savedPapers.map(paper => `
+              <div class="paper-card">
+                <div>
+                  <div class="card-top-meta">
+                    <span class="badge-domain">${escapeHtml(paper.folderName || paper.domain || 'Scholarly')}</span>
+                    <span class="badge-year">Year: ${paper.year || '2025'}</span>
+                  </div>
+                  <div class="card-title" style="margin-top: 10px;">${escapeHtml(paper.title)}</div>
+                  <div class="card-authors" style="margin-top: 4px;">${escapeHtml(paper.authors || 'Scholars')} — <i>${escapeHtml(paper.source || 'Peer-Reviewed')}</i></div>
+                </div>
+                <div class="card-footer-actions">
+                  <button type="button" class="btn-card-action btn-unsave-paper" data-id="${paper.id}">Remove from Saved</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.btn-reopen-saved').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (state.researchItems[id]) {
+          state.activeResearchId = id;
+          state.activeFolderId = state.researchItems[id].folderId;
+          renderFolderUI();
+          renderResearchWorkspace(state.researchItems[id]);
+          switchView('dashboard');
+          showToast(`Opened workspace: ${state.researchItems[id].title}`, ICONS.file);
+        }
+      });
+    });
+
+    container.querySelectorAll('.btn-move-saved').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        openMoveResearchModal(id);
+      });
+    });
+
+    container.querySelectorAll('.btn-unsave-paper').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const paper = state.papers.find(p => p.id === id);
+        if (paper) {
+          paper.saved = false;
+          renderSavedView();
+          renderPapersList();
+          showToast('Paper removed from saved list', ICONS.check);
+        }
+      });
+    });
+
+  } else {
+    // HISTORY SUB-TAB
+    const filteredGroups = (state.history || []).map(group => {
+      const matchingItems = (group.items || []).filter(item => {
+        if (!q) return true;
+        return (item.title && item.title.toLowerCase().includes(q)) ||
+               (group.domain && group.domain.toLowerCase().includes(q)) ||
+               (group.group && group.group.toLowerCase().includes(q));
+      });
+      return {
+        ...group,
+        items: matchingItems
+      };
+    }).filter(group => group.items.length > 0);
+
+    if (filteredGroups.length === 0) {
+      container.innerHTML = `
+        <div class="saved-history-empty-state">
+          <div class="saved-history-empty-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"></circle>
+              <polyline points="12 7 12 12 15 15"></polyline>
+            </svg>
+          </div>
+          <div class="saved-history-empty-title">${q ? 'No matching search history' : 'No history yet'}</div>
+          <div class="saved-history-empty-subtitle">${q ? `No past research searches match "${escapeHtml(searchQuery)}". Try a different query.` : 'Searches and research inquiries you conduct will appear here in your timeline.'}</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = filteredGroups.map(group => `
+      <div class="history-section-group">
+        <div class="history-group-title">${escapeHtml(group.group)}</div>
+        <div class="history-domain-block">
+          <div class="history-domain-header">
+            ${ICONS.folder}
+            <span>${escapeHtml(group.domain)}</span>
+          </div>
+          ${group.items.map(item => `
+            <div class="history-item-row" data-research-id="${item.id}" title="Click to reopen workspace">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: var(--primary-indigo); font-size: 0.75rem;">●</span>
+                <span class="history-item-title">${escapeHtml(item.title)}</span>
+              </div>
+              <span class="history-item-time">${escapeHtml(item.time)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.history-item-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const researchId = row.getAttribute('data-research-id');
+        if (state.researchItems[researchId]) {
+          state.activeResearchId = researchId;
+          const research = state.researchItems[researchId];
+          state.activeFolderId = research.folderId;
+          renderFolderUI();
+          renderResearchWorkspace(research);
+          switchView('dashboard');
+          showToast(`Reopened research workspace: ${research.title}`, ICONS.file);
+        } else {
+          // If custom/external history item, populate into search bar on home dashboard
+          const folderName = row.closest('.history-domain-block')?.querySelector('.history-domain-header span')?.textContent.trim() || '';
+          const matchedFolder = state.folders.find(f => f.name.toLowerCase() === folderName.toLowerCase());
+          if (matchedFolder) {
+            state.activeFolderId = matchedFolder.id;
+          }
+          renderFolderUI();
+          switchView('dashboard');
+          const title = row.querySelector('.history-item-title')?.textContent || 'Research Topic';
+          if (elements.mainResearchInput) {
+            elements.mainResearchInput.value = title;
+            elements.mainResearchInput.focus();
+          }
+          showToast(`Loaded query into search: ${title}`, ICONS.sparkle);
+        }
+      });
+    });
+  }
 }
 
-function renderSavedView() {
-  const container = document.getElementById('saved-items-container');
-  if (!container) return;
-
-  const savedProjects = Object.values(state.researchItems).filter(r => r.saved);
-  const savedPapers = state.papers.filter(p => p.saved);
-
-  container.innerHTML = `
-    <div style="margin-bottom: 24px;">
-      <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;">Saved Research Workspaces (${savedProjects.length})</div>
-      <div class="cards-list-grid">
-        ${savedProjects.map(proj => {
-          const folder = state.folders.find(f => f.id === proj.folderId) || getActiveFolder();
-          return `
-            <div class="paper-card">
-              <div>
-                <div class="card-top-meta">
-                  <span class="badge-domain">${folder.name}</span>
-                  <span class="badge-year">Date: ${proj.date}</span>
-                </div>
-                <div class="card-title" style="margin-top: 10px;">${proj.title}</div>
-              </div>
-              <div class="card-footer-actions">
-                <button class="btn-card-action btn-reopen-saved" data-id="${proj.id}">Open Workspace →</button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-
-    <div>
-      <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;">Saved Academic Papers (${savedPapers.length})</div>
-      <div class="cards-list-grid">
-        ${savedPapers.map(paper => `
-          <div class="paper-card">
-            <div>
-              <div class="card-top-meta">
-                <span class="badge-domain">${paper.folderName}</span>
-                <span class="badge-year">Year: ${paper.year}</span>
-              </div>
-              <div class="card-title" style="margin-top: 10px;">${paper.title}</div>
-              <div class="card-authors" style="margin-top: 4px;">${paper.authors} — <i>${paper.source}</i></div>
-            </div>
-            <div class="card-footer-actions">
-              <button class="btn-card-action btn-unsave-paper" data-id="${paper.id}">Remove from Saved</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-
-  container.querySelectorAll('.btn-reopen-saved').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id');
-      if (state.researchItems[id]) {
-        state.activeResearchId = id;
-        state.activeFolderId = state.researchItems[id].folderId;
-        renderFolderUI();
-        renderResearchWorkspace(state.researchItems[id]);
-        switchView('dashboard');
-      }
-    });
-  });
-
-  container.querySelectorAll('.btn-unsave-paper').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id');
-      const paper = state.papers.find(p => p.id === id);
-      if (paper) {
-        paper.saved = false;
-        renderSavedView();
-        renderPapersList();
-        showToast('Paper removed from saved list', ICONS.check);
-      }
-    });
-  });
+function renderHistoryView() {
+  renderSavedView('history');
 }
 
 // Scroll Reveal Animations for Cards and Sections
@@ -1958,7 +2792,17 @@ function switchView(viewName) {
     viewName = 'dashboard';
   }
 
+  // Handle unified Saved & History navigation
+  if (viewName === 'history') {
+    viewName = 'saved';
+    state.savedSubTab = 'history';
+  }
+
   state.currentView = viewName;
+
+  if (viewName === 'saved') {
+    renderSavedView();
+  }
   
   // Update active rail icons
   document.querySelectorAll('.rail-icon-btn').forEach(btn => {
@@ -2086,9 +2930,12 @@ function bindEvents() {
     });
   }
 
+  // 5. Unified Saved & History Rail Option (Defaults to Saved first)
   if (elements.railBtnTasks) {
     elements.railBtnTasks.addEventListener('click', () => {
       closeSubpanels();
+      state.savedSubTab = 'saved'; // Save process works first!
+      renderSavedView('saved');
       switchView('saved');
     });
   }
@@ -2096,7 +2943,39 @@ function bindEvents() {
   if (elements.railBtnHistory) {
     elements.railBtnHistory.addEventListener('click', () => {
       closeSubpanels();
-      switchView('history');
+      state.savedSubTab = 'history';
+      renderSavedView('history');
+      switchView('saved');
+    });
+  }
+
+  // Segmented Sub-Tab Switcher in Top Right of Saved/History View
+  if (elements.tabBtnSaved) {
+    elements.tabBtnSaved.addEventListener('click', () => {
+      renderSavedView('saved', state.savedSearchQuery);
+    });
+  }
+
+  if (elements.tabBtnHistory) {
+    elements.tabBtnHistory.addEventListener('click', () => {
+      renderSavedView('history', state.savedSearchQuery);
+    });
+  }
+
+  // Real-time Search Input in Top Right of Saved/History View
+  if (elements.savedHistorySearchInput) {
+    elements.savedHistorySearchInput.addEventListener('input', (e) => {
+      renderSavedView(state.savedSubTab, e.target.value);
+    });
+  }
+
+  if (elements.btnClearSavedHistorySearch) {
+    elements.btnClearSavedHistorySearch.addEventListener('click', () => {
+      if (elements.savedHistorySearchInput) {
+        elements.savedHistorySearchInput.value = '';
+        elements.savedHistorySearchInput.focus();
+      }
+      renderSavedView(state.savedSubTab, '');
     });
   }
 
@@ -2108,18 +2987,72 @@ function bindEvents() {
     });
   }
 
-  // Centerpiece Search Pro & Deep Research toggles (Image 1)
-  if (elements.btnProToggle) {
-    elements.btnProToggle.addEventListener('click', () => {
-      const isPro = elements.btnProToggle.classList.toggle('active');
-      showToast(isPro ? 'Pro Search Enabled (Extended Multi-Step Reasoning)' : 'Standard Search Mode', ICONS.sparkle);
+  // Centerpiece Unified Search Mode Dropdown (Merged Pro & Deep Research)
+  if (elements.btnSearchModeTrigger && elements.searchModePopover) {
+    elements.btnSearchModeTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = elements.searchModePopover.classList.toggle('active');
+      if (elements.searchModeDropdownWrap) {
+        elements.searchModeDropdownWrap.classList.toggle('open', isOpen);
+      }
     });
-  }
 
-  if (elements.btnDeepResearchToggle) {
-    elements.btnDeepResearchToggle.addEventListener('click', () => {
-      const isDeep = elements.btnDeepResearchToggle.classList.toggle('active');
-      showToast(isDeep ? 'Deep Research Enabled (Full Literature Synthesis)' : 'Quick Search Enabled', ICONS.sparkle);
+    document.addEventListener('click', (e) => {
+      if (elements.searchModePopover && !elements.searchModePopover.contains(e.target) && !elements.btnSearchModeTrigger.contains(e.target)) {
+        elements.searchModePopover.classList.remove('active');
+        if (elements.searchModeDropdownWrap) {
+          elements.searchModeDropdownWrap.classList.remove('open');
+        }
+      }
+    });
+
+    document.querySelectorAll('.search-mode-option').forEach(option => {
+      option.addEventListener('click', () => {
+        const mode = option.getAttribute('data-mode');
+        const label = option.getAttribute('data-label');
+        const isPro = option.getAttribute('data-pro') === 'true';
+
+        // Update selected state in list
+        document.querySelectorAll('.search-mode-option').forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+
+        // Update trigger button UI
+        if (elements.currentModeLabel) {
+          elements.currentModeLabel.textContent = label;
+        }
+
+        if (elements.currentModeProTag) {
+          elements.currentModeProTag.style.display = isPro ? 'inline-block' : 'none';
+        }
+
+        if (elements.currentModeIcon) {
+          if (mode === 'deep') {
+            elements.currentModeIcon.innerHTML = `
+              <circle cx="12" cy="12" r="3" />
+              <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
+              <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+            `;
+          } else if (mode === 'pro') {
+            elements.currentModeIcon.innerHTML = `
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            `;
+          } else {
+            elements.currentModeIcon.innerHTML = `
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            `;
+          }
+        }
+
+        // Close dropdown
+        elements.searchModePopover.classList.remove('active');
+        if (elements.searchModeDropdownWrap) {
+          elements.searchModeDropdownWrap.classList.remove('open');
+        }
+
+        // Feedback toast
+        showToast(`Mode switched to: ${label}`, ICONS.sparkle);
+      });
     });
   }
 
@@ -2354,21 +3287,29 @@ function bindEvents() {
 
   function handleWordFileImport(fileName) {
     const activeFolder = getActiveFolder();
-    closeModal(elements.importWordModal);
+    if (elements.importWordModal) closeModal(elements.importWordModal);
+    if (elements.uploadDocModal) closeModal(elements.uploadDocModal);
     
+    const docId = 'doc-word-' + Date.now();
+    const cleanTitle = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+
     const newDoc = {
-      id: 'doc-' + Date.now(),
+      id: docId,
       title: fileName,
       folderId: activeFolder.id,
       folderName: activeFolder.name,
-      type: 'Word Document',
+      type: 'word',
       size: '3.4 MB',
       date: new Date().toISOString().split('T')[0],
+      openedTime: 'Just now',
+      words: 850,
+      prompt: `Analysis and expansion of ${cleanTitle}`,
       tag: 'Imported Word Doc',
       preview: `Imported from Word: Full manuscript text parsed and indexed directly into "${activeFolder.name}". Outline and references ready for AI synthesis.`
     };
     
-    state.documents.unshift(newDoc);
+    // Add to Documents drawer list and sync
+    addDocumentToDrawer(newDoc);
     activeFolder.documentCount = (activeFolder.documentCount || 0) + 1;
     
     // Also attach to active research item if present
@@ -2384,9 +3325,10 @@ function bindEvents() {
       renderResearchWorkspace(state.researchItems[state.activeResearchId]);
     }
 
+    loadImportedWordDoc(fileName);
     renderFolderUI();
     renderDocumentLibrary();
-    showToast(`Imported "${fileName}" into ${activeFolder.name}`, ICONS.file);
+    showToast(`Imported "${fileName}" into ${activeFolder.name} & Documents menu`, ICONS.file);
   }
 
   // Document Upload Form
@@ -2399,21 +3341,27 @@ function bindEvents() {
       const activeFolder = getActiveFolder();
       
       closeModal(elements.uploadDocModal);
-      state.documents.unshift({
-        id: 'doc-' + Date.now(),
+      const docId = 'doc-' + Date.now();
+
+      addDocumentToDrawer({
+        id: docId,
         title: title,
         folderId: activeFolder.id,
         folderName: activeFolder.name,
-        type: 'PDF',
+        type: tag === 'Imported Word Doc' ? 'word' : 'doc',
         size: '2.4 MB',
         date: new Date().toISOString().split('T')[0],
+        openedTime: 'Just now',
+        words: 620,
+        prompt: `Document artifact: ${title} (${tag})`,
         tag: tag,
         preview: `Uploaded research artifact indexed in ${activeFolder.name}. Ready for automated citations and chat.`
       });
+
       activeFolder.documentCount = (activeFolder.documentCount || 0) + 1;
       renderDocumentLibrary();
       renderFolderUI();
-      showToast(`Uploaded "${title}" to ${activeFolder.name}`, ICONS.check);
+      showToast(`Uploaded "${title}" to ${activeFolder.name} & Documents menu`, ICONS.check);
     });
   }
 
@@ -2422,14 +3370,50 @@ function bindEvents() {
     elements.btnSaveResearch.addEventListener('click', () => {
       const research = state.researchItems[state.activeResearchId];
       if (research) {
-        research.saved = !research.saved;
-        renderResearchWorkspace(research);
-        renderSavedView();
-        const folder = state.folders.find(f => f.id === research.folderId) || getActiveFolder();
-        showToast(research.saved ? `Saved to folder: ${folder.name}` : `Removed from saved items`, ICONS.folder);
+        if (!research.saved) {
+          finalizeSaveResearchItem(research, getActiveFolder());
+        } else {
+          research.saved = false;
+          renderResearchWorkspace(research);
+          renderSavedView();
+          renderFolderUI();
+          showToast(`Removed from saved items`, ICONS.folder);
+        }
       }
     });
   }
+
+  if (elements.btnMoveResearch) {
+    elements.btnMoveResearch.addEventListener('click', () => {
+      openMoveResearchModal(state.activeResearchId);
+    });
+  }
+
+  // Folder Popover Live Search Filter
+  if (elements.folderPopoverSearch) {
+    elements.folderPopoverSearch.addEventListener('input', (e) => {
+      renderFolderUI(e.target.value);
+    });
+  }
+
+  // Rename Folder Form Submit
+  if (elements.formRenameFolder) {
+    elements.formRenameFolder.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const idInput = document.getElementById('rename-folder-id');
+      const nameInput = document.getElementById('rename-folder-input');
+      if (idInput && nameInput) {
+        handleFolderRename(idInput.value, nameInput.value);
+      }
+    });
+  }
+
+  // Dismiss context menus when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.btn-folder-dots') && !e.target.closest('.folder-dots-menu')) {
+      document.querySelectorAll('.folder-dots-menu').forEach(m => m.classList.remove('active'));
+    }
+  });
 
   if (elements.btnCopyResearch) {
     elements.btnCopyResearch.addEventListener('click', () => {
@@ -3141,10 +4125,25 @@ function initJenniWorkspace() {
     });
   }
 
-  // Upload Source Card
+  // Compact Import Word (.docx) Button in Fill Document Prompt Box
+  const promptWordFileInput = document.getElementById('prompt-word-file-input');
   if (elements.cardActionImportWord) {
     elements.cardActionImportWord.addEventListener('click', () => {
-      openModal(elements.uploadDocModal);
+      if (promptWordFileInput) {
+        promptWordFileInput.click();
+      } else if (elements.uploadDocModal) {
+        openModal(elements.uploadDocModal);
+      }
+    });
+  }
+
+  if (promptWordFileInput) {
+    promptWordFileInput.addEventListener('change', () => {
+      if (promptWordFileInput.files && promptWordFileInput.files.length > 0) {
+        const file = promptWordFileInput.files[0];
+        handleWordFileImport(file.name);
+        promptWordFileInput.value = ''; // Reset for next file
+      }
     });
   }
 

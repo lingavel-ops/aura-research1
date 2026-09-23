@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>தமிழ் THAMILI - AI Research Workspace</title>
+  <title>தமிழ் THAMILI - Research & Documentation</title>
   <meta name="description"
-    content="Tamil-First AI Research Workspace. Research, discover, analyze, and organize knowledge with AI.">
+    content="Tamil-First AI Research & Documentation Workspace. Research, discover, analyze, and organize knowledge with AI.">
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="stylesheet" href="styles/main.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,20 +109,12 @@
           </svg>
         </button>
 
-        <!-- 5. Tasks / Clipboard Check (Image 2 - Clipboard with check) -->
-        <button class="rail-icon-btn" id="rail-btn-tasks" data-view="saved" title="Saved Research">
+        <!-- 5. Unified Saved & History Option -->
+        <button class="rail-icon-btn" id="rail-btn-tasks" data-view="saved" title="Saved & History">
           <svg class="rail-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
             <path d="M9 14l2 2 4-4" />
-          </svg>
-        </button>
-
-        <!-- 7. History / Clock (Image 2 - Clock with hands) -->
-        <button class="rail-icon-btn" id="rail-btn-history" data-view="history" title="Research History">
-          <svg class="rail-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9" />
-            <polyline points="12 7 12 12 15 15" />
           </svg>
         </button>
       </div>
@@ -147,7 +139,17 @@
           </button>
           <!-- Folder Popover Dropdown -->
           <div class="folder-popover" id="folder-popover">
-            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 8px;">My Research Folders</div>
+            <div class="folder-popover-header">
+              <div class="folder-popover-title">Research Folders</div>
+              <span class="folder-popover-count-pill" id="folder-popover-total-badge">0 folders</span>
+            </div>
+            <div class="folder-search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="folder-popover-search" placeholder="Search folders..." autocomplete="off">
+            </div>
             <div class="folder-popover-list" id="folder-popover-list"></div>
             <button class="btn-quick-action btn-trigger-create-folder" style="width: 100%; margin-top: 8px; justify-content: center; font-size: 0.8rem;">
               <span>+ Create New Folder</span>
@@ -461,7 +463,7 @@
       <header class="top-navbar">
         <div class="top-nav-left">
           <div class="domain-breadcrumb">
-            <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">AI Research Workspace</span>
+            <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">Research & Documentation</span>
           </div>
         </div>
 
@@ -488,6 +490,11 @@
 
           <!-- Centerpiece Hero & Search Card (Exact Match to Image 1) -->
           <div class="search-hero-wrapper">
+            <!-- Thamili Brand Logo (Compact & Clean) -->
+            <div class="thamili-hero-logo-container" id="hero-brand-logo-wrap" title="தமிழி - THAMILI AI Research Workspace">
+              <img src="assets/thamili-logo.png" alt="தமிழி THAMILI" class="thamili-hero-logo" />
+            </div>
+
             <!-- Big Centered Title (Image 1: "What do you want to know?") -->
             <h1 class="search-main-heading">What do you want to know?</h1>
 
@@ -504,22 +511,81 @@
               </div>
 
               <div class="search-card-toolbar">
-                <!-- Left Action Pills -->
+                <!-- Left Action Pills (Merged Pro & Deep Research Dropdown) -->
                 <div class="toolbar-left-pills">
-                  <!-- Pro Pill Badge (Image 1) -->
-                  <button type="button" class="pill-badge-btn pro-badge" id="btn-pro-toggle" title="Toggle Pro Mode">
-                    <span>pro</span>
-                  </button>
+                  <div class="search-mode-dropdown-wrap" id="search-mode-dropdown-wrap">
+                    <button type="button" class="pill-badge-btn search-mode-pill active" id="btn-search-mode-trigger" title="Select Research Mode">
+                      <svg class="atom-icon" id="current-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="12" cy="12" r="3" />
+                        <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
+                        <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+                      </svg>
+                      <span id="current-mode-label">Deep Research</span>
+                      <span class="pro-tag-mini" id="current-mode-pro-tag">pro</span>
+                      <svg class="chevron-arrow-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
 
-                  <!-- Deep Research Pill Button (Image 1) -->
-                  <button type="button" class="pill-badge-btn deep-research-pill active" id="btn-deep-research-toggle" title="Toggle Deep Research">
-                    <svg class="atom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <circle cx="12" cy="12" r="3" />
-                      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
-                      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
-                    </svg>
-                    <span>Deep Research</span>
-                  </button>
+                    <!-- Dropdown Options Popover -->
+                    <div class="search-mode-popover" id="search-mode-popover">
+                      <div class="search-mode-option selected" data-mode="deep" data-label="Deep Research" data-pro="true">
+                        <div class="mode-option-left">
+                          <svg class="mode-option-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="12" cy="12" r="3" />
+                            <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
+                            <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+                          </svg>
+                          <div class="mode-meta">
+                            <div class="mode-heading-row">
+                              <span class="mode-name">Deep Research</span>
+                              <span class="pro-tag-mini">pro</span>
+                            </div>
+                            <span class="mode-desc">Multi-source literature synthesis & academic indexing</span>
+                          </div>
+                        </div>
+                        <svg class="mode-check-indicator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+
+                      <div class="search-mode-option" data-mode="pro" data-label="Pro Search" data-pro="true">
+                        <div class="mode-option-left">
+                          <svg class="mode-option-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                          </svg>
+                          <div class="mode-meta">
+                            <div class="mode-heading-row">
+                              <span class="mode-name">Pro Search</span>
+                              <span class="pro-tag-mini">pro</span>
+                            </div>
+                            <span class="mode-desc">Multi-step reasoning with guided clarifying follow-ups</span>
+                          </div>
+                        </div>
+                        <svg class="mode-check-indicator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+
+                      <div class="search-mode-option" data-mode="standard" data-label="Standard Search" data-pro="false">
+                        <div class="mode-option-left">
+                          <svg class="mode-option-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                          <div class="mode-meta">
+                            <div class="mode-heading-row">
+                              <span class="mode-name">Standard Search</span>
+                            </div>
+                            <span class="mode-desc">Fast direct AI answer and quick web references</span>
+                          </div>
+                        </div>
+                        <svg class="mode-check-indicator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Right Action Icons (Image 1) -->
@@ -651,34 +717,18 @@
                   <span class="prompt-feedback-text" id="prompt-feedback-text">Add more context for higher quality generations</span>
                 </div>
 
-                <!-- Or Also Sub-Divider -->
-                <div class="doc-prompt-subdivider">
-                  <span>or also</span>
-                </div>
-
-                <!-- Import from Word (.docx) Card -->
-                <div class="card-action-import-word" id="card-action-import-word" title="Import from Word (.docx)">
-                  <div class="import-word-left">
-                    <div class="word-badge-icon">
-                      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-                        <rect width="32" height="32" rx="6" fill="#185ABD"/>
+                <!-- Footer with Compact Word Import Button & Next Button -->
+                <div class="doc-prompt-footer">
+                  <input type="file" id="prompt-word-file-input" accept=".docx,.doc,.txt,.pdf" style="display: none;">
+                  <button type="button" class="btn-compact-import-word" id="card-action-import-word" title="Import from Word (.docx)">
+                    <span class="word-mini-icon-wrap">
+                      <svg width="15" height="15" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="5" fill="#185ABD"/>
                         <path d="M7 8.5L9.6 20H11.8L13.8 11.2L15.8 20H18L20.6 8.5H18.4L16.9 16.2L14.8 8.5H12.8L10.7 16.2L9.2 8.5H7Z" fill="white"/>
                       </svg>
-                    </div>
-                    <div class="import-word-meta">
-                      <div class="import-word-title">Import from Word (.docx)</div>
-                      <div class="import-word-sub">Import your work and improve it with AI</div>
-                    </div>
-                  </div>
-                  <div class="import-word-chevron">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </div>
-                </div>
-
-                <!-- Footer with Next Button -->
-                <div class="doc-prompt-footer">
+                    </span>
+                    <span>Import Word (.docx)</span>
+                  </button>
                   <button type="button" class="btn-doc-prompt-next" id="btn-doc-prompt-next">
                     Next
                   </button>
@@ -749,6 +799,15 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                   <span>Saved in Folder</span>
+                </button>
+                <button class="btn-result-action" id="btn-move-research" title="Move to another folder">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 9l4-4 4 4"></path>
+                    <path d="M9 5v12"></path>
+                    <path d="M19 15l-4 4-4-4"></path>
+                    <path d="M15 19V7"></path>
+                  </svg>
+                  <span>Move</span>
                 </button>
                 <button class="btn-result-action" id="btn-export-research">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1099,26 +1158,47 @@
         </section>
 
         <!-- ==========================================
-           VIEW 6: HISTORY
-           ========================================== -->
-        <section class="page-view" id="view-history">
-          <div class="view-header">
-            <h2 class="view-header-title">Research History</h2>
-          </div>
-
-          <div id="history-timeline-container">
-            <!-- Injected via JS -->
-          </div>
-        </section>
-
-        <!-- ==========================================
-           VIEW 7: SAVED RESEARCH
+           VIEW 7: UNIFIED SAVED RESEARCH & HISTORY
            ========================================== -->
         <section class="page-view" id="view-saved">
-          <div class="view-header">
-            <h2 class="view-header-title">Saved Research</h2>
+          <div class="saved-history-header-bar">
+            <div class="saved-history-header-left">
+              <h2 class="view-header-title" id="saved-view-heading">Saved Research</h2>
+            </div>
+            
+            <div class="saved-history-header-right">
+              <!-- Live Search Input -->
+              <div class="saved-history-search-wrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="saved-history-search-input" class="saved-history-search-input" placeholder="Search history & saved..." autocomplete="off">
+                <button type="button" class="btn-clear-search-mini" id="btn-clear-saved-history-search" title="Clear search" style="display: none;">✕</button>
+              </div>
+
+              <!-- Top Right Segmented Tab Switcher (Saved first by default, History switchable) -->
+              <div class="saved-history-tabs-pill">
+                <button type="button" class="saved-tab-toggle-btn active" id="tab-btn-saved" data-subtab="saved">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span>Saved</span>
+                  <span class="saved-tab-count" id="saved-total-count-badge">7</span>
+                </button>
+                <button type="button" class="saved-tab-toggle-btn" id="tab-btn-history" data-subtab="history">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12 7 12 12 15 15"></polyline>
+                  </svg>
+                  <span>History</span>
+                  <span class="saved-tab-count" id="history-total-count-badge">6</span>
+                </button>
+              </div>
+            </div>
           </div>
 
+          <!-- Dynamic Container for Saved Cards / History Timeline -->
           <div id="saved-items-container">
             <!-- Injected via JS -->
           </div>
@@ -1430,6 +1510,192 @@
             <button class="btn-quick-action" id="btn-copy-share-link" style="padding: 0 16px;">Copy</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Smart Folder Suggestion Modal (Single or Multi-Folder Selection) -->
+  <div class="modal-backdrop" id="modal-smart-folder-suggest">
+    <div class="modal-card modal-card-folder-mgmt">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="folder-modal-icon-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title" id="smart-folder-modal-title">Save Research to Folder</h3>
+            <div style="font-size: 0.78rem; color: var(--text-muted);" id="smart-folder-modal-subtitle">AI matched your research to existing folder(s)</div>
+          </div>
+        </div>
+        <button class="btn-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="folder-query-preview-box">
+          <span class="folder-preview-label">Research Inquiry:</span>
+          <div class="folder-preview-query" id="smart-folder-query-text">"Impact of AI on Healthcare"</div>
+        </div>
+
+        <div id="smart-folder-content-container">
+          <!-- Dynamically populated with single card or multi-folder selection list -->
+        </div>
+      </div>
+      <div class="modal-footer" id="smart-folder-modal-footer">
+        <button type="button" class="btn-modal-cancel" id="btn-smart-folder-skip">Don't Save Yet</button>
+        <button type="button" class="btn-quick-action" id="btn-smart-folder-create-new">+ Create New Folder</button>
+        <button type="button" class="btn-getstarted" id="btn-smart-folder-confirm" style="padding: 9px 20px;">Save to Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Duplicate / Similar Research Alert Modal -->
+  <div class="modal-backdrop" id="modal-duplicate-research">
+    <div class="modal-card modal-card-folder-mgmt">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="folder-modal-icon-badge warning-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title">Similar Research Exists</h3>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Duplicate topic detected in target folder</div>
+          </div>
+        </div>
+        <button class="btn-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 12px;">
+          A very similar research inquiry already exists in <strong id="dup-modal-folder-name" style="color: var(--primary-indigo);">AI Healthcare Research</strong>:
+        </p>
+
+        <!-- Existing Item Comparison Card -->
+        <div class="duplicate-compare-card">
+          <div class="dup-card-badge">Existing Research</div>
+          <div class="dup-card-title" id="dup-existing-title">AI in Cancer Detection & Medical Imaging</div>
+          <div class="dup-card-meta" id="dup-existing-meta">Saved on 2026-08-20 • 3 Papers • 4 Sources</div>
+        </div>
+
+        <div style="margin-top: 10px; font-size: 0.82rem; color: var(--text-muted);">
+          Would you like to open the existing workspace or save this as a separate research item?
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel" id="btn-dup-cancel">Cancel</button>
+        <button type="button" class="btn-quick-action" id="btn-dup-save-anyway">Save Anyway (Separate Item)</button>
+        <button type="button" class="btn-getstarted" id="btn-dup-open-existing" style="padding: 9px 20px;">Open Existing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Rename Folder Modal -->
+  <div class="modal-backdrop" id="modal-rename-folder">
+    <div class="modal-card modal-card-folder-mgmt">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="folder-modal-icon-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title">Rename Research Folder</h3>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Update the display name of this research folder</div>
+          </div>
+        </div>
+        <button class="btn-modal-close">✕</button>
+      </div>
+      <form id="form-rename-folder">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="rename-folder-input">Folder Name</label>
+            <input type="text" class="form-input" id="rename-folder-input" placeholder="e.g., Clinical Deep Learning" required>
+          </div>
+          <input type="hidden" id="rename-folder-id">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel">Cancel</button>
+          <button type="submit" class="btn-getstarted" style="padding: 9px 20px;">Save Name</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 9. Delete Folder Confirmation Modal -->
+  <div class="modal-backdrop" id="modal-delete-folder">
+    <div class="modal-card modal-card-folder-mgmt">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="folder-modal-icon-badge danger-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title">Delete Research Folder</h3>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Confirm deletion of this folder</div>
+          </div>
+        </div>
+        <button class="btn-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.92rem; color: var(--text-main); margin-bottom: 12px;">
+          Are you sure you want to delete folder <strong id="delete-folder-name-label" style="color: var(--primary-indigo);">AI Healthcare Research</strong>?
+        </p>
+        <div class="delete-folder-warning-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>This folder contains <strong id="delete-folder-count-label">0 researches</strong>. Deleting will remove this folder.</span>
+        </div>
+        <input type="hidden" id="delete-folder-id">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel">Cancel</button>
+        <button type="button" class="btn-danger-action" id="btn-confirm-delete-folder">Delete Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Move Research Item Modal -->
+  <div class="modal-backdrop" id="modal-move-research">
+    <div class="modal-card modal-card-folder-mgmt">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="folder-modal-icon-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 9l4-4 4 4"></path>
+              <path d="M9 5v12"></path>
+              <path d="M19 15l-4 4-4-4"></path>
+              <path d="M15 19V7"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title">Move Research to Folder</h3>
+            <div style="font-size: 0.78rem; color: var(--text-muted);" id="move-modal-research-title">Select destination folder</div>
+          </div>
+        </div>
+        <button class="btn-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="move-folder-selection-list" id="move-folder-list-container">
+          <!-- Dynamically populated with folders -->
+        </div>
+        <input type="hidden" id="move-target-research-id">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel">Cancel</button>
+        <button type="button" class="btn-getstarted" id="btn-confirm-move-research" style="padding: 9px 20px;">Move Here</button>
       </div>
     </div>
   </div>
