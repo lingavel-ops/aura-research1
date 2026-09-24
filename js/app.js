@@ -5,6 +5,7 @@
 
 import { THAMILI_INITIAL_DATA } from './data.js';
 import { NetworkingModule } from './networking.js';
+import { NeuralSphereModule } from './neuralSphere.js';
 
 // Application State
 const state = {
@@ -331,6 +332,7 @@ function init() {
   renderHistoryView();
   renderSavedView();
   initJenniWorkspace();
+  initDocumentEditor();
   NetworkingModule.init();
   bindEvents();
   
@@ -500,7 +502,19 @@ function cacheDomElements() {
   elements.docPromptFeedbackRow = document.getElementById('doc-prompt-feedback-row');
   elements.promptFeedbackText = document.getElementById('prompt-feedback-text');
   elements.cardActionImportWord = document.getElementById('card-action-import-word');
+  elements.btnHeroImportWord = document.getElementById('btn-hero-import-word');
   elements.btnDocPromptNext = document.getElementById('btn-doc-prompt-next');
+  elements.docPromptStep1 = document.getElementById('doc-prompt-step-1');
+  elements.docPromptStep2 = document.getElementById('doc-prompt-step-2');
+  elements.docPromptStep3 = document.getElementById('doc-prompt-step-3');
+  elements.btnCitationBack = document.getElementById('btn-citation-back');
+  elements.btnCitationSubmit = document.getElementById('btn-citation-submit');
+  elements.btnCitationAddSources = document.getElementById('btn-citation-add-sources');
+  elements.btnStructureBack = document.getElementById('btn-structure-back');
+  elements.btnStartWriting = document.getElementById('btn-start-writing');
+  elements.summaryPillPromptStep2 = document.getElementById('summary-pill-prompt-step2');
+  elements.summaryPillPromptStep3 = document.getElementById('summary-pill-prompt-step3');
+  elements.summaryPillCitationsStep3 = document.getElementById('summary-pill-citations-step3');
   elements.btnSkipAndWrite = document.getElementById('btn-skip-and-write');
   elements.exploreCardChat = document.getElementById('explore-card-chat');
   elements.exploreCardUpload = document.getElementById('explore-card-upload');
@@ -1157,6 +1171,9 @@ function executeResearchPipeline(query, folderId) {
   elements.researchLoadingOverlay.classList.add('active');
   elements.loaderQueryBadge.textContent = `Query: "${query}"`;
   elements.progressBarFill.style.width = '0%';
+
+  // Launch 3D Tamil Glyph Neural Sphere Generation Animation
+  NeuralSphereModule.startAnimation('tamil-neural-sphere-canvas', 'dot-matrix-progress-badge');
   
   elements.researchLoadingOverlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -1194,6 +1211,7 @@ function executeResearchPipeline(query, folderId) {
 
     const percent = Math.round(((currentStageIndex + 1) / totalStages) * 100);
     elements.progressBarFill.style.width = `${percent}%`;
+    NeuralSphereModule.setProgress(percent);
 
     setTimeout(() => {
       if (stageItem) {
@@ -1212,6 +1230,7 @@ function executeResearchPipeline(query, folderId) {
 // Intercept Pipeline to ALWAYS ask/suggest user confirmation (NO silent auto-saving!)
 function finishResearchPipeline(query, folder, fetchedPapers = []) {
   state.isResearchRunning = false;
+  NeuralSphereModule.stopAnimation();
   elements.researchLoadingOverlay.classList.remove('active');
   
   const researchId = 'research-' + Date.now();
@@ -2822,6 +2841,12 @@ function switchView(viewName) {
     }
   });
 
+  // Show "Research & Documentation" breadcrumb only on Home dashboard, hide on other menu views
+  const topNavBreadcrumb = document.getElementById('top-navbar-breadcrumb');
+  if (topNavBreadcrumb) {
+    topNavBreadcrumb.style.display = (viewName === 'dashboard') ? 'flex' : 'none';
+  }
+
   // Focus home centerpiece search bar when on home dashboard
   if (viewName === 'dashboard') {
     setTimeout(() => {
@@ -4125,16 +4150,21 @@ function initJenniWorkspace() {
     });
   }
 
-  // Compact Import Word (.docx) Button in Fill Document Prompt Box
+  // Import Word (.docx) Option Button placed below Fill Document Prompt Box
   const promptWordFileInput = document.getElementById('prompt-word-file-input');
+  const triggerWordImport = () => {
+    if (promptWordFileInput) {
+      promptWordFileInput.click();
+    } else if (elements.uploadDocModal) {
+      openModal(elements.uploadDocModal);
+    }
+  };
+
+  if (elements.btnHeroImportWord) {
+    elements.btnHeroImportWord.addEventListener('click', triggerWordImport);
+  }
   if (elements.cardActionImportWord) {
-    elements.cardActionImportWord.addEventListener('click', () => {
-      if (promptWordFileInput) {
-        promptWordFileInput.click();
-      } else if (elements.uploadDocModal) {
-        openModal(elements.uploadDocModal);
-      }
-    });
+    elements.cardActionImportWord.addEventListener('click', triggerWordImport);
   }
 
   if (promptWordFileInput) {
@@ -4147,10 +4177,92 @@ function initJenniWorkspace() {
     });
   }
 
-  // Next Button
+  // Next Button on Prompt Box (Transitions to Citation Preferences step)
   if (elements.btnDocPromptNext) {
     elements.btnDocPromptNext.addEventListener('click', () => {
-      handlePromptNext();
+      showCitationPreferencesStep();
+    });
+  }
+
+  // Citation Preferences: Back Button
+  if (elements.btnCitationBack) {
+    elements.btnCitationBack.addEventListener('click', () => {
+      showPromptInputStep();
+    });
+  }
+
+  // Citation Preferences: Add Sources Button
+  if (elements.btnCitationAddSources) {
+    elements.btnCitationAddSources.addEventListener('click', () => {
+      if (elements.uploadDocModal) {
+        openModal(elements.uploadDocModal);
+      } else {
+        openSubpanel('library');
+      }
+    });
+  }
+
+  // Citation Preferences: Pill Groups (Publish Year, Impact Factor, Cited by)
+  document.querySelectorAll('.citation-pill-group').forEach(group => {
+    group.querySelectorAll('.citation-pill-btn').forEach(pill => {
+      pill.addEventListener('click', () => {
+        group.querySelectorAll('.citation-pill-btn').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const val = pill.getAttribute('data-value');
+        if (val === 'custom') {
+          showToast('Custom year filter set: 2020 – 2026', ICONS.sparkle);
+        }
+      });
+    });
+  });
+
+  // Citation Preferences: Final Submit (Next Button on Step 2 -> Transitions to Step 3: Document Structure)
+  if (elements.btnCitationSubmit) {
+    elements.btnCitationSubmit.addEventListener('click', () => {
+      showStructurePreferencesStep();
+    });
+  }
+
+  // Step 3: Structure Back Button (Transitions back to Step 2)
+  if (elements.btnStructureBack) {
+    elements.btnStructureBack.addEventListener('click', () => {
+      showCitationPreferencesStep();
+    });
+  }
+
+  // Summary Edit Pill Buttons (Quick jump to Step 1 or Step 2)
+  if (elements.summaryPillPromptStep2) {
+    elements.summaryPillPromptStep2.addEventListener('click', () => {
+      showPromptInputStep();
+    });
+  }
+
+  if (elements.summaryPillPromptStep3) {
+    elements.summaryPillPromptStep3.addEventListener('click', () => {
+      showPromptInputStep();
+    });
+  }
+
+  if (elements.summaryPillCitationsStep3) {
+    elements.summaryPillCitationsStep3.addEventListener('click', () => {
+      showCitationPreferencesStep();
+    });
+  }
+
+  // Step 3: Structure Option Cards Selection
+  document.querySelectorAll('.structure-option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.structure-option-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+
+  // Step 3: Start Writing Final Launch Button
+  if (elements.btnStartWriting) {
+    elements.btnStartWriting.addEventListener('click', () => {
+      const prefs = getSelectedCitationPreferences();
+      const structure = getSelectedStructureOption();
+      handlePromptNext(prefs, structure);
     });
   }
 
@@ -4343,6 +4455,9 @@ function initJenniWorkspace() {
       createNewDocument();
     }
   });
+
+  // Sync Initial Prompt Feedback
+  updatePromptFeedback();
 }
 
 function openSubpanel(drawerName) {
@@ -4377,25 +4492,140 @@ function closeSubpanels() {
   });
 }
 
+// Centralized registration helper: saves all documents & research studies into Documents menu & state
+function addDocumentToDrawer(docItem) {
+  if (!docItem || !docItem.title) return;
+  
+  const id = docItem.id || 'doc-' + Date.now();
+  const rId = docItem.researchId || (docItem.type === 'research' ? id : null);
+  const existingIdx = state.recentDocuments.findIndex(d => d.id === id || (rId && (d.researchId === rId || d.id === rId)));
+  const activeFolder = getActiveFolder();
+
+  const formattedItem = {
+    id: id,
+    title: docItem.title,
+    type: docItem.type || (rId ? 'research' : (docItem.title.toLowerCase().endsWith('.docx') ? 'word' : 'doc')),
+    researchId: rId,
+    folderId: docItem.folderId || activeFolder.id,
+    folderName: docItem.folderName || activeFolder.name,
+    openedTime: docItem.openedTime || 'Just now',
+    prompt: docItem.prompt || '',
+    content: docItem.content || '',
+    words: docItem.words || (docItem.content ? docItem.content.split(/\s+/).filter(Boolean).length : 0),
+    active: true
+  };
+
+  // Deactivate all others
+  state.recentDocuments.forEach(d => d.active = false);
+
+  if (existingIdx >= 0) {
+    state.recentDocuments[existingIdx] = { ...state.recentDocuments[existingIdx], ...formattedItem };
+    const [item] = state.recentDocuments.splice(existingIdx, 1);
+    state.recentDocuments.unshift(item);
+  } else {
+    state.recentDocuments.unshift(formattedItem);
+  }
+
+  state.activeDocId = id;
+  if (formattedItem.researchId) {
+    state.activeResearchId = formattedItem.researchId;
+  }
+
+  // Sync with state.documents for folder views & document library
+  const docIdx = state.documents.findIndex(d => d.id === id || (rId && d.id === rId));
+  if (docIdx >= 0) {
+    state.documents[docIdx] = { 
+      ...state.documents[docIdx], 
+      title: formattedItem.title, 
+      folderId: formattedItem.folderId,
+      folderName: formattedItem.folderName 
+    };
+  } else {
+    state.documents.unshift({
+      id: id,
+      title: formattedItem.title,
+      folderId: formattedItem.folderId,
+      folderName: formattedItem.folderName,
+      type: formattedItem.type === 'research' ? 'Research Study' : (formattedItem.type === 'word' ? 'Word Document' : 'Document Draft'),
+      size: formattedItem.type === 'word' ? '3.4 MB' : '1.2 MB',
+      date: new Date().toISOString().split('T')[0],
+      tag: formattedItem.type === 'research' ? 'Research Synthesis' : (formattedItem.type === 'word' ? 'Imported Word Doc' : 'Draft Manuscript'),
+      preview: formattedItem.prompt || formattedItem.title
+    });
+  }
+
+  renderRecentDocumentsDrawer();
+  renderDocumentLibrary();
+}
+
 function renderRecentDocumentsDrawer(query = '') {
   const container = document.getElementById('panel-docs-container');
   if (!container) return;
 
+  const q = query ? query.toLowerCase().trim() : '';
   const docs = state.recentDocuments.filter(d => 
-    !query || d.title.toLowerCase().includes(query.toLowerCase())
+    !q || 
+    (d.title && d.title.toLowerCase().includes(q)) || 
+    (d.prompt && d.prompt.toLowerCase().includes(q)) || 
+    (d.folderName && d.folderName.toLowerCase().includes(q))
   );
 
-  container.innerHTML = docs.map(doc => `
-    <div class="panel-doc-item ${doc.id === state.activeDocId ? 'active' : ''}" data-doc-id="${doc.id}">
-      <div class="panel-doc-title">${doc.title}</div>
-      <div class="panel-doc-meta">${doc.openedTime}</div>
-    </div>
-  `).join('');
+  if (docs.length === 0) {
+    container.innerHTML = `
+      <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 28px 12px; line-height: 1.5;">
+        ${q ? `No documents or research found matching "<b>${escapeHtml(query)}</b>"` : 'No documents created yet. Click "+" or start research to create.'}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = docs.map(doc => {
+    const isResearch = doc.type === 'research' || doc.researchId || (state.researchItems && Boolean(state.researchItems[doc.id]));
+    const isWord = doc.type === 'word' || (doc.title && doc.title.toLowerCase().endsWith('.docx'));
+    const badgeClass = isResearch ? 'badge-research' : (isWord ? 'badge-word' : 'badge-doc');
+    const badgeLabel = isResearch ? 'Research' : (isWord ? 'Word' : 'Doc');
+    const isActive = doc.id === state.activeDocId || (doc.researchId && doc.researchId === state.activeResearchId);
+
+    return `
+      <div class="panel-doc-item ${isActive ? 'active' : ''}" data-doc-id="${doc.id}" data-research-id="${doc.researchId || (isResearch ? doc.id : '')}" title="${escapeHtml(doc.title)}">
+        <div class="panel-doc-top-row">
+          <div class="panel-doc-title">${escapeHtml(doc.title)}</div>
+          <span class="panel-doc-badge ${badgeClass}">${badgeLabel}</span>
+        </div>
+        <div class="panel-doc-meta">
+          <span>${escapeHtml(doc.openedTime || 'Recently opened')}</span>
+          ${doc.folderName ? `<span>• ${escapeHtml(doc.folderName)}</span>` : ''}
+          ${doc.words ? `<span>• ${doc.words.toLocaleString()} words</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
 
   container.querySelectorAll('.panel-doc-item').forEach(item => {
     item.addEventListener('click', () => {
       const docId = item.getAttribute('data-doc-id');
-      loadDocument(docId);
+      const researchId = item.getAttribute('data-research-id');
+      
+      if (researchId && state.researchItems && state.researchItems[researchId]) {
+        state.activeResearchId = researchId;
+        state.activeDocId = docId;
+        state.recentDocuments.forEach(d => d.active = (d.id === docId || d.researchId === researchId));
+        renderResearchWorkspace(state.researchItems[researchId]);
+        switchView('dashboard');
+        closeSubpanels();
+        renderRecentDocumentsDrawer();
+        showToast(`Opened research workspace: ${state.researchItems[researchId].title}`, ICONS.sparkle);
+        
+        const workspaceEl = document.getElementById('results-workspace');
+        if (workspaceEl) {
+          setTimeout(() => {
+            workspaceEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        }
+      } else {
+        loadDocument(docId);
+        closeSubpanels();
+      }
     });
   });
 }
@@ -4545,22 +4775,53 @@ function updatePromptFeedback() {
   const val = elements.docPromptTextarea.value.trim();
   const len = val.length;
 
-  if (len === 0 || len < 30) {
+  elements.docPromptTextarea.classList.remove('prompt-weak', 'prompt-good', 'prompt-very-good');
+
+  if (len === 0) {
+    elements.docPromptFeedbackRow.style.display = 'none';
+    elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row';
+    return;
+  }
+
+  elements.docPromptFeedbackRow.style.display = 'flex';
+
+  if (len < 30) {
+    // Red for Weak Prompt
     elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row weak';
+    elements.docPromptTextarea.classList.add('prompt-weak');
     elements.docPromptFeedbackRow.innerHTML = `
+      <div class="prompt-feedback-indicator">
+        <span class="prompt-strength-dot dot-1"></span>
+        <span class="prompt-strength-dot dot-2"></span>
+        <span class="prompt-strength-dot dot-3"></span>
+      </div>
       <strong class="prompt-feedback-label">Weak prompt:</strong>
       <span class="prompt-feedback-text" id="prompt-feedback-text">Add more context for higher quality generations</span>
     `;
-  } else if (len < 75) {
+  } else if (len < 80) {
+    // Yellow for Good Prompt
     elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row good';
+    elements.docPromptTextarea.classList.add('prompt-good');
     elements.docPromptFeedbackRow.innerHTML = `
+      <div class="prompt-feedback-indicator">
+        <span class="prompt-strength-dot dot-1"></span>
+        <span class="prompt-strength-dot dot-2"></span>
+        <span class="prompt-strength-dot dot-3"></span>
+      </div>
       <strong class="prompt-feedback-label">Good prompt:</strong>
       <span class="prompt-feedback-text" id="prompt-feedback-text">Clear focus, ready for outline synthesis</span>
     `;
   } else {
-    elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row good';
+    // Green for Very Good Prompt
+    elements.docPromptFeedbackRow.className = 'doc-prompt-feedback-row very-good';
+    elements.docPromptTextarea.classList.add('prompt-very-good');
     elements.docPromptFeedbackRow.innerHTML = `
-      <strong class="prompt-feedback-label">Strong prompt:</strong>
+      <div class="prompt-feedback-indicator">
+        <span class="prompt-strength-dot dot-1"></span>
+        <span class="prompt-strength-dot dot-2"></span>
+        <span class="prompt-strength-dot dot-3"></span>
+      </div>
+      <strong class="prompt-feedback-label">Very good prompt:</strong>
       <span class="prompt-feedback-text" id="prompt-feedback-text">High domain specificity for academic quality</span>
     `;
   }
@@ -4581,44 +4842,631 @@ function updateLiveWordCount() {
   if (activeDoc) activeDoc.words = count;
 }
 
-function handlePromptNext() {
-  const prompt = elements.docPromptTextarea?.value.trim() || 'A literature review on renewable energy policy';
+function showPromptInputStep() {
+  const step1 = document.getElementById('doc-prompt-step-1');
+  const step2 = document.getElementById('doc-prompt-step-2');
+  const step3 = document.getElementById('doc-prompt-step-3');
+  if (step1) step1.style.display = 'block';
+  if (step2) step2.style.display = 'none';
+  if (step3) step3.style.display = 'none';
+  if (elements.docPromptTextarea) elements.docPromptTextarea.focus();
+}
+
+function showCitationPreferencesStep() {
+  const step1 = document.getElementById('doc-prompt-step-1');
+  const step2 = document.getElementById('doc-prompt-step-2');
+  const step3 = document.getElementById('doc-prompt-step-3');
   
+  const prompt = elements.docPromptTextarea?.value.trim() || 'Research prompt';
+  const cleanPromptSnippet = prompt.length > 28 ? prompt.substring(0, 28) + '...' : prompt;
+
+  const pillText2 = document.getElementById('summary-pill-prompt-text-step2');
+  const pillText3 = document.getElementById('summary-pill-prompt-text-step3');
+  if (pillText2) pillText2.textContent = cleanPromptSnippet;
+  if (pillText3) pillText3.textContent = cleanPromptSnippet;
+
+  if (step1) step1.style.display = 'none';
+  if (step2) {
+    step2.style.display = 'block';
+    step2.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (step3) step3.style.display = 'none';
+}
+
+function showStructurePreferencesStep() {
+  const step1 = document.getElementById('doc-prompt-step-1');
+  const step2 = document.getElementById('doc-prompt-step-2');
+  const step3 = document.getElementById('doc-prompt-step-3');
+
+  const prompt = elements.docPromptTextarea?.value.trim() || 'Research prompt';
+  const cleanPromptSnippet = prompt.length > 28 ? prompt.substring(0, 28) + '...' : prompt;
+  
+  const pillText3 = document.getElementById('summary-pill-prompt-text-step3');
+  if (pillText3) pillText3.textContent = cleanPromptSnippet;
+
+  const prefs = getSelectedCitationPreferences();
+  const summaryCitationEl = document.getElementById('summary-pill-citations-text');
+  if (summaryCitationEl) {
+    summaryCitationEl.textContent = `${prefs.styleLabel} · Web search: ${prefs.webSearch ? 'On' : 'Off'} · Library search: ${prefs.webSearch ? 'On' : 'Off'}`;
+  }
+
+  if (step1) step1.style.display = 'none';
+  if (step2) step2.style.display = 'none';
+  if (step3) {
+    step3.style.display = 'block';
+    step3.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function getSelectedStructureOption() {
+  const selected = document.querySelector('.structure-option-card.selected');
+  return selected ? selected.getAttribute('data-structure') : 'imrad';
+}
+
+function getSelectedCitationPreferences() {
+  const styleSelect = document.getElementById('citation-pref-style-select');
+  const webToggle = document.getElementById('citation-toggle-web');
+  const preprintsToggle = document.getElementById('citation-toggle-preprints');
+  
+  const activeYearPill = document.querySelector('#pref-group-publish-year .citation-pill-btn.active');
+  const activeImpactPill = document.querySelector('#pref-group-impact-factor .citation-pill-btn.active');
+  const activeCitedPill = document.querySelector('#pref-group-cited-by .citation-pill-btn.active');
+
+  return {
+    style: styleSelect ? styleSelect.value : 'apa',
+    styleLabel: styleSelect ? styleSelect.options[styleSelect.selectedIndex]?.text.split('·')[0].trim() : 'APA (7th ed.)',
+    webSearch: webToggle ? webToggle.checked : true,
+    includePreprints: preprintsToggle ? preprintsToggle.checked : true,
+    publishYear: activeYearPill ? activeYearPill.getAttribute('data-value') : 'all',
+    impactFactor: activeImpactPill ? activeImpactPill.getAttribute('data-value') : 'all',
+    citedBy: activeCitedPill ? activeCitedPill.getAttribute('data-value') : 'all'
+  };
+}
+
+function handlePromptNext(citationPrefs = null, structureMode = null) {
+  const prompt = elements.docPromptTextarea?.value.trim() || 'Analyze large language models as a major development in artificial intelligence, focusing on their conceptual foundations, architectures, training methods, applications, evaluation, and broader implications. Use a clear academic style suitable for interdisciplinary research in artificial intelligence and computational language studies.';
+  
+  const prefs = citationPrefs || getSelectedCitationPreferences();
+  const structure = structureMode || getSelectedStructureOption();
+
   if (elements.docPromptAccordionBox) {
     elements.docPromptAccordionBox.classList.add('collapsed');
   }
 
-  // If on dashboard, execute research pipeline with prompt
-  if (state.currentView === 'dashboard') {
-    executeResearchPipeline(prompt, state.activeFolderId);
-    showToast(`Starting research for "${prompt.length > 35 ? prompt.substring(0, 35) + '...' : prompt}"`, ICONS.sparkle);
-  } else {
-    if (elements.docRichEditorArea) {
-      elements.docRichEditorArea.classList.add('active');
-    }
-    if (elements.docEditorContent) {
-      elements.docEditorContent.innerHTML = `
-        <h2>1. Introduction & Background</h2>
-        <p>The application of autonomous intelligent systems in <i>${prompt}</i> addresses core challenges in diagnostic accuracy, workflow latency, and data harmonization. As recent studies by Tanaka et al. (2024) illustrate, modern multimodal models provide cognitive feedback loops that significantly optimize empirical outcomes.</p>
-        
-        <h2>2. Research Hypotheses & Key Objectives</h2>
-        <p>We hypothesize that integrating constrained Socratic decoding algorithms into domain-specific pipelines enhances concept mastery by up to 38% while preventing hallucinated clinical assertions (Rostova & Chen, 2025).</p>
-        
-        <h2>3. Proposed Methodology & Architecture</h2>
-        <p>We leverage a federated neural processing framework operating on edge NPUs. Zero student or patient behavioral data is egressed to external cloud clusters, ensuring compliance with strict healthcare and institutional privacy directives.</p>
-      `;
-      elements.docEditorContent.focus();
-    }
-    updateLiveWordCount();
-    showToast('Research draft initialized from prompt!', ICONS.sparkle);
+  openJenniEditor(prompt, prefs, structure);
+}
+
+function generateEditorSectionsList(prompt, structure) {
+  if (structure === 'imrad') {
+    return [
+      {
+        title: "Research Context",
+        guidance: "Provide the historical context, real-world motivation, and fundamental backdrop of the research area.",
+        initialText: "The expansion of modern automated systems represents a paradigm shift across multidisciplinary computation..."
+      },
+      {
+        title: "Research Objectives",
+        guidance: "Define the specific hypotheses, investigative goals, and evaluation benchmarks targeted in this manuscript.",
+        initialText: "This investigation aims to benchmark algorithmic stability, error mitigation bounds, and latency efficiencies..."
+      },
+      {
+        title: "Literature Overview",
+        guidance: "Critically synthesize seminal publications, meta-analyses, and existing methodological frameworks.",
+        initialText: "Foundational scholarship across leading publications highlights core dependencies on high-dimensional representations..."
+      },
+      {
+        title: "Conceptual Foundations",
+        guidance: "Establish mathematical baselines, tensor transformations, and loss formulations.",
+        initialText: "Theoretical baselines establish loss minimization through adaptive gradient algorithms..."
+      },
+      {
+        title: "Methodology & Architecture",
+        guidance: "Detail dataset curation, layer parameterization, and hardware execution configurations.",
+        initialText: "Experiments utilized distributed GPU clusters with mixed-precision arithmetic to evaluate parameter convergence..."
+      },
+      {
+        title: "Empirical Results",
+        guidance: "Present quantitative findings, ablation metrics, and comparative evaluation graphs.",
+        initialText: "Empirical benchmarking demonstrates a 34% reduction in inference latency with preserved semantic precision..."
+      },
+      {
+        title: "Discussion & Conclusion",
+        guidance: "Examine practical implications, safety considerations, limitations, and future directions.",
+        initialText: "In conclusion, the proposed synthesis confirms scalable stability while presenting new opportunities for automated domain reasoning."
+      }
+    ];
   }
+
+  // Default Jenni AI Exact Structure Match (as shown in reference screenshot)
+  return [
+    {
+      title: "Research Context",
+      guidance: "Analyze the broader development and background context in artificial intelligence and computational language studies.",
+      initialText: ""
+    },
+    {
+      title: "Research Objectives",
+      guidance: "Outline primary goals for evaluating conceptual foundations, architectures, and applications.",
+      initialText: ""
+    },
+    {
+      title: "Literature Overview",
+      guidance: "Examine seminal literature and landmark breakthroughs in language modeling.",
+      initialText: ""
+    },
+    {
+      title: "Conceptual Foundations",
+      guidance: "Detail probabilistic modeling, next-token prediction, and embedding representations.",
+      initialText: ""
+    },
+    {
+      title: "Language Modeling Principles",
+      guidance: "Discuss auto-regressive vs. masked architectures and loss functions.",
+      initialText: ""
+    },
+    {
+      title: "Model Scaling Effects",
+      guidance: "Evaluate compute-optimal scaling laws, parameter thresholds, and emergent properties.",
+      initialText: ""
+    },
+    {
+      title: "Model Architecture",
+      guidance: "Examine transformer stacks, multi-head attention, and feedforward networks.",
+      initialText: ""
+    },
+    {
+      title: "Transformer Components",
+      guidance: "Analyze self-attention mechanisms, positional encodings, and normalization layers.",
+      initialText: ""
+    },
+    {
+      title: "Inference Processes",
+      guidance: "Cover decoding techniques, temperature sampling, top-p/top-k, and KV-caching.",
+      initialText: ""
+    },
+    {
+      title: "Training Methodologies",
+      guidance: "Detail unsupervised pre-training, supervised fine-tuning, and alignment via RLHF.",
+      initialText: ""
+    }
+  ];
+}
+
+function openJenniEditor(promptText = '', citationPrefs = null, structureMode = null) {
+  const prompt = promptText || elements.docPromptTextarea?.value.trim() || 'Analyze large language models as a major development in artificial intelligence, focusing on their conceptual foundations, architectures, training methods, applications, evaluation, and broader implications. Use a clear academic style suitable for interdisciplinary research in artificial intelligence and computational language studies.';
+  
+  const prefs = citationPrefs || getSelectedCitationPreferences();
+  const structure = structureMode || getSelectedStructureOption();
+  
+  state.citationPreferences = prefs;
+  state.documentStructure = structure;
+
+  // Determine Title (Matches screenshot or creates smart clean title from prompt)
+  let docTitle = 'Large Language Models: Architectures, Capabilities, and Applications';
+  if (prompt && prompt.length > 0 && !prompt.toLowerCase().includes('renewable energy policy')) {
+    const cleanP = prompt.replace(/^(a literature review on|analyze|research on|investigate|study on)\s+/i, '');
+    docTitle = cleanP.charAt(0).toUpperCase() + cleanP.slice(1);
+    if (docTitle.length > 75) {
+      docTitle = docTitle.substring(0, 75).trim() + '...';
+    }
+  }
+
+  // Populate Editor Header & Title
+  const docTitleInput = document.getElementById('editor-doc-title-input');
+  const docMainH1 = document.getElementById('editor-main-h1');
+  const promptTextContent = document.getElementById('editor-prompt-text-content');
+  const sectionPromptsList = document.getElementById('editor-section-prompts-list');
+  const docBody = document.getElementById('editor-document-body');
+
+  if (docTitleInput) docTitleInput.value = docTitle;
+  if (docMainH1) docMainH1.textContent = docTitle;
+  if (promptTextContent) promptTextContent.textContent = prompt;
+
+  // Generate Sections based on topic & structure
+  const sections = generateEditorSectionsList(prompt, structure);
+
+  // Render Left Section Prompts List
+  if (sectionPromptsList) {
+    sectionPromptsList.innerHTML = sections.map((sec, idx) => `
+      <div class="section-prompt-item ${idx === 0 ? 'active' : ''}" data-sec-id="sec-${idx}" id="section-prompt-item-${idx}">
+        <div class="section-prompt-row">
+          <span class="section-prompt-name">${sec.title}</span>
+          <svg class="section-prompt-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="section-prompt-body">
+          ${sec.guidance}
+        </div>
+      </div>
+    `).join('');
+
+    sectionPromptsList.querySelectorAll('.section-prompt-item').forEach((item, idx) => {
+      item.addEventListener('click', () => {
+        sectionPromptsList.querySelectorAll('.section-prompt-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        item.classList.toggle('expanded');
+
+        // Scroll to corresponding heading in main document
+        const targetHeading = document.getElementById(`doc-heading-sec-${idx}`);
+        if (targetHeading) {
+          targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  }
+
+  // Render Right Writing Canvas
+  if (docBody) {
+    if (structure === 'none') {
+      docBody.innerHTML = `
+        <p>Begin writing freely about <i>${escapeHtml(prompt)}</i> formatted according to ${prefs.styleLabel} standards...</p>
+      `;
+    } else {
+      docBody.innerHTML = sections.map((sec, idx) => `
+        <h2 id="doc-heading-sec-${idx}">${sec.title}</h2>
+        ${sec.initialText ? `<p>${sec.initialText}</p>` : ''}
+      `).join('');
+    }
+  }
+
+  updateEditorWordCount();
+
+  // Register in state & documents drawer
+  const docId = 'doc-editor-' + Date.now();
+  const activeFolder = getActiveFolder();
+
+  addDocumentToDrawer({
+    id: docId,
+    title: docTitle,
+    type: 'doc',
+    prompt: prompt,
+    folderId: activeFolder.id,
+    folderName: activeFolder.name,
+    openedTime: 'Just now',
+    words: 53,
+    citationStyle: prefs.styleLabel || 'APA (7th ed.)',
+    structure: structure
+  });
+
+  // Switch to the full editor view
+  switchView('editor');
+  showToast('Redirected to Document Editor — ready to write!', ICONS.sparkle);
+}
+
+function initDocumentEditor() {
+  const btnBackHome = document.getElementById('btn-editor-back-home');
+  if (btnBackHome) {
+    btnBackHome.addEventListener('click', () => switchView('dashboard'));
+  }
+
+  // Document Title Synchronization
+  const docTitleInput = document.getElementById('editor-doc-title-input');
+  const docMainH1 = document.getElementById('editor-main-h1');
+  
+  if (docTitleInput && docMainH1) {
+    docTitleInput.addEventListener('input', (e) => {
+      docMainH1.textContent = e.target.value || 'Untitled Document';
+      updateActiveDocTitle(e.target.value);
+      updateEditorWordCount();
+    });
+
+    docMainH1.addEventListener('input', (e) => {
+      docTitleInput.value = docMainH1.textContent || 'Untitled Document';
+      updateActiveDocTitle(docMainH1.textContent);
+      updateEditorWordCount();
+    });
+  }
+
+  // Header Actions
+  const btnShare = document.getElementById('btn-editor-share');
+  if (btnShare) {
+    btnShare.addEventListener('click', () => {
+      if (elements.shareModal) openModal(elements.shareModal);
+      else {
+        navigator.clipboard?.writeText(window.location.href);
+        showToast('Document share link copied to clipboard!', ICONS.check);
+      }
+    });
+  }
+
+  const btnReview = document.getElementById('btn-editor-review');
+  if (btnReview) {
+    btnReview.addEventListener('click', () => {
+      showToast('Review mode active — suggestions and comments enabled', ICONS.sparkle);
+    });
+  }
+
+  const btnChat = document.getElementById('btn-editor-chat');
+  if (btnChat) {
+    btnChat.addEventListener('click', () => {
+      openSubpanel('papers');
+      showToast('AI Scholarly Assistant open in side panel', ICONS.sparkle);
+    });
+  }
+
+  const btnPricing = document.getElementById('btn-editor-pricing');
+  if (btnPricing) {
+    btnPricing.addEventListener('click', () => {
+      if (elements.modalPricing) openModal(elements.modalPricing);
+      else showToast('Unlimited AI research & citing on Pro Plan', ICONS.sparkle);
+    });
+  }
+
+  const btnMore = document.getElementById('btn-editor-more');
+  if (btnMore) {
+    btnMore.addEventListener('click', () => {
+      showToast('Options: Export PDF, Word (.docx), Citation BibTeX', ICONS.lightbulb);
+    });
+  }
+
+  // Left Assistant Panel Collapse
+  const btnCollapseAssistant = document.getElementById('btn-collapse-assistant');
+  const assistantPanel = document.getElementById('editor-assistant-panel');
+  if (btnCollapseAssistant && assistantPanel) {
+    btnCollapseAssistant.addEventListener('click', () => {
+      assistantPanel.classList.toggle('collapsed');
+      showToast(assistantPanel.classList.contains('collapsed') ? 'Assistant panel collapsed' : 'Assistant panel expanded');
+    });
+  }
+
+  // Formatting Toolbar Buttons
+  const tbUndo = document.getElementById('tb-undo');
+  if (tbUndo) tbUndo.addEventListener('click', () => document.execCommand('undo'));
+
+  const tbRedo = document.getElementById('tb-redo');
+  if (tbRedo) tbRedo.addEventListener('click', () => document.execCommand('redo'));
+
+  const tbBold = document.getElementById('tb-bold');
+  if (tbBold) tbBold.addEventListener('click', () => document.execCommand('bold'));
+
+  const tbItalic = document.getElementById('tb-italic');
+  if (tbItalic) tbItalic.addEventListener('click', () => document.execCommand('italic'));
+
+  const tbUnderline = document.getElementById('tb-underline');
+  if (tbUnderline) tbUnderline.addEventListener('click', () => document.execCommand('underline'));
+
+  const tbStrike = document.getElementById('tb-strike');
+  if (tbStrike) tbStrike.addEventListener('click', () => document.execCommand('strikeThrough'));
+
+  const tbCode = document.getElementById('tb-code');
+  if (tbCode) {
+    tbCode.addEventListener('click', () => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().length > 0) {
+        document.execCommand('insertHTML', false, `<code>${selection.toString()}</code>`);
+      } else {
+        document.execCommand('insertHTML', false, '<code>code</code>');
+      }
+    });
+  }
+
+  const tbSup = document.getElementById('tb-sup');
+  if (tbSup) tbSup.addEventListener('click', () => document.execCommand('superscript'));
+
+  const tbSub = document.getElementById('tb-sub');
+  if (tbSub) tbSub.addEventListener('click', () => document.execCommand('subscript'));
+
+  const tbLink = document.getElementById('tb-link');
+  if (tbLink) {
+    tbLink.addEventListener('click', () => {
+      const url = prompt('Enter link URL (e.g. https://doi.org/...):', 'https://');
+      if (url && url !== 'https://') {
+        document.execCommand('createLink', false, url);
+      }
+    });
+  }
+
+  const tbColor = document.getElementById('tb-color');
+  if (tbColor) {
+    tbColor.addEventListener('click', () => {
+      document.execCommand('foreColor', false, '#6366f1');
+      showToast('Applied primary highlight color', ICONS.check);
+    });
+  }
+
+  const tbCite = document.getElementById('tb-cite');
+  if (tbCite) {
+    tbCite.addEventListener('click', () => {
+      const prefs = state.citationPreferences || { style: 'apa', styleLabel: 'APA (7th ed.)' };
+      let citationText = ' (Vaswani et al., 2017) ';
+      if (prefs.style === 'ieee') citationText = ' [1] ';
+      else if (prefs.style === 'nature') citationText = '¹ ';
+      else if (prefs.style === 'mla') citationText = ' (Vaswani 45) ';
+      else if (prefs.style === 'harvard') citationText = ' (Vaswani et al. 2017) ';
+
+      const docBody = document.getElementById('editor-document-body');
+      if (docBody) {
+        docBody.focus();
+        document.execCommand('insertHTML', false, citationText);
+        updateEditorWordCount();
+        showToast(`Inserted ${prefs.styleLabel} citation: ${citationText.trim()}`, ICONS.check);
+      }
+    });
+  }
+
+  // Insert Objects (Image, Table, Code Block, Math, Equation)
+  const tbImage = document.getElementById('tb-image');
+  if (tbImage) {
+    tbImage.addEventListener('click', () => {
+      const docBody = document.getElementById('editor-document-body');
+      if (docBody) {
+        docBody.focus();
+        document.execCommand('insertHTML', false, `
+          <figure style="margin: 20px 0; text-align: center; border: 1px solid var(--border-light); border-radius: 8px; padding: 14px; background: var(--bg-surface-subtle);">
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin-bottom: 6px;">Figure 1: Neural Architectural Flow & Attention Projections</div>
+            <div style="height: 120px; background: var(--bg-surface-active); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--primary-indigo); font-size: 0.85rem; font-weight: 600;">[ High-Resolution Schematic Representation ]</div>
+            <figcaption style="font-size: 0.78rem; color: var(--text-muted); margin-top: 8px;">Multi-tier empirical convergence across transformer sub-layers.</figcaption>
+          </figure>
+        `);
+        updateEditorWordCount();
+      }
+    });
+  }
+
+  const tbTable = document.getElementById('tb-table');
+  if (tbTable) {
+    tbTable.addEventListener('click', () => {
+      const docBody = document.getElementById('editor-document-body');
+      if (docBody) {
+        docBody.focus();
+        document.execCommand('insertHTML', false, `
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.86rem;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--border-light); text-align: left;">
+                <th style="padding: 8px 12px; color: var(--text-main);">Model Architecture</th>
+                <th style="padding: 8px 12px; color: var(--text-main);">Parameters</th>
+                <th style="padding: 8px 12px; color: var(--text-main);">Inference Latency</th>
+                <th style="padding: 8px 12px; color: var(--text-main);">Benchmark Accuracy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--border-subtle);">
+                <td style="padding: 8px 12px;">Dense Transformer</td>
+                <td style="padding: 8px 12px;">70B</td>
+                <td style="padding: 8px 12px;">24.2 ms/tok</td>
+                <td style="padding: 8px 12px;">86.4%</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border-subtle);">
+                <td style="padding: 8px 12px;">Sparse MoE (8x7B)</td>
+                <td style="padding: 8px 12px;">47B Active</td>
+                <td style="padding: 8px 12px;">14.8 ms/tok</td>
+                <td style="padding: 8px 12px;">88.1%</td>
+              </tr>
+            </tbody>
+          </table>
+        `);
+        updateEditorWordCount();
+      }
+    });
+  }
+
+  const tbCodeblock = document.getElementById('tb-codeblock');
+  if (tbCodeblock) {
+    tbCodeblock.addEventListener('click', () => {
+      const docBody = document.getElementById('editor-document-body');
+      if (docBody) {
+        docBody.focus();
+        document.execCommand('insertHTML', false, `
+          <pre style="background: var(--bg-surface-subtle); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; overflow-x: auto; margin: 16px 0;"><code># Self-Attention Formulation
+import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    d_k = Q.size(-1)
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, -1e9)
+    weights = F.softmax(scores, dim=-1)
+    return torch.matmul(weights, V)</code></pre>
+        `);
+        updateEditorWordCount();
+      }
+    });
+  }
+
+  const tbMath = document.getElementById('tb-math');
+  if (tbMath) {
+    tbMath.addEventListener('click', () => {
+      const docBody = document.getElementById('editor-document-body');
+      if (docBody) {
+        docBody.focus();
+        document.execCommand('insertHTML', false, ` <code style="color: var(--primary-indigo); background: var(--bg-surface-active); font-weight: 600;">O(N \\cdot d)</code> `);
+        updateEditorWordCount();
+      }
+    });
+  }
+
+  const tbEquation = document.getElementById('tb-equation');
+  if (tbEquation) {
+    tbEquation.addEventListener('click', () => {
+      const docBody = document.getElementById('editor-document-body');
+      if (docBody) {
+        docBody.focus();
+        document.execCommand('insertHTML', false, `
+          <div style="text-align: center; margin: 18px 0; padding: 12px; background: var(--bg-surface-subtle); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.92rem; color: var(--text-main); border: 1px solid var(--border-subtle);">
+            $$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$
+          </div>
+        `);
+        updateEditorWordCount();
+      }
+    });
+  }
+
+  // Style Dropdown Popover
+  const tbStyleBtn = document.getElementById('tb-style-btn');
+  const tbStylePopover = document.getElementById('tb-style-popover');
+  const tbStyleLabel = document.getElementById('tb-current-style-label');
+
+  if (tbStyleBtn && tbStylePopover) {
+    tbStyleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      tbStylePopover.classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+      tbStylePopover.classList.remove('open');
+    });
+
+    tbStylePopover.querySelectorAll('.tb-style-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const tag = opt.getAttribute('data-tag');
+        const label = opt.textContent.split('(')[0].trim();
+        if (tbStyleLabel) tbStyleLabel.textContent = label;
+        
+        const docBody = document.getElementById('editor-document-body');
+        if (docBody) {
+          docBody.focus();
+          document.execCommand('formatBlock', false, tag);
+          updateEditorWordCount();
+        }
+        tbStylePopover.classList.remove('open');
+      });
+    });
+  }
+
+  // Autocomplete Toggle
+  const tbAutocompleteCheckbox = document.getElementById('tb-autocomplete-checkbox');
+  if (tbAutocompleteCheckbox) {
+    tbAutocompleteCheckbox.addEventListener('change', (e) => {
+      showToast(e.target.checked ? 'AI Autocomplete active (press Tab to accept)' : 'AI Autocomplete paused', ICONS.sparkle);
+    });
+  }
+
+  // Document Body input listener for live word count
+  const docBody = document.getElementById('editor-document-body');
+  if (docBody) {
+    docBody.addEventListener('input', updateEditorWordCount);
+  }
+}
+
+function updateEditorWordCount() {
+  const badge = document.getElementById('editor-word-count-badge');
+  const h1 = document.getElementById('editor-main-h1');
+  const body = document.getElementById('editor-document-body');
+  if (!badge) return;
+
+  const h1Text = h1 ? h1.textContent : '';
+  const bodyText = body ? body.innerText : '';
+  const combined = (h1Text + ' ' + bodyText).trim();
+
+  const count = combined.length === 0 ? 0 : combined.split(/\s+/).filter(w => w.length > 0).length;
+  badge.textContent = `${count} words`;
+
+  const activeDoc = state.recentDocuments.find(d => d.id === state.activeDocId);
+  if (activeDoc) activeDoc.words = count;
 }
 
 function createNewDocument() {
   const newId = 'doc-recent-' + Date.now();
+  const activeFolder = getActiveFolder();
+
   const newDoc = {
     id: newId,
-    title: 'Untitled',
+    title: 'Untitled Document',
+    folderId: activeFolder.id,
+    folderName: activeFolder.name,
+    type: 'doc',
     openedTime: 'Just now',
     prompt: '',
     content: '',
@@ -4626,49 +5474,48 @@ function createNewDocument() {
     active: true
   };
 
-  state.recentDocuments.forEach(d => d.active = false);
-  state.recentDocuments.unshift(newDoc);
+  addDocumentToDrawer(newDoc);
   state.activeDocId = newId;
 
-  if (elements.topDocTitleInput) elements.topDocTitleInput.value = 'Untitled';
-  if (elements.docMainHeadingInput) elements.docMainHeadingInput.value = 'Untitled';
+  if (elements.topDocTitleInput) elements.topDocTitleInput.value = 'Untitled Document';
+  if (elements.docMainHeadingInput) elements.docMainHeadingInput.value = 'Untitled Document';
   if (elements.docPromptTextarea) elements.docPromptTextarea.value = '';
   if (elements.docEditorContent) elements.docEditorContent.innerHTML = '';
   if (elements.docPromptAccordionBox) elements.docPromptAccordionBox.classList.remove('collapsed');
 
+  showPromptInputStep();
   updatePromptFeedback();
   updateLiveWordCount();
-  renderRecentDocumentsDrawer();
   switchView('dashboard');
-  showToast('Created new research document', ICONS.file);
+  showToast('Created new research document in Documents menu', ICONS.file);
 }
 
 function loadDocument(docId) {
   const doc = state.recentDocuments.find(d => d.id === docId);
   if (!doc) return;
 
+  // If this item is a research study, open the research workspace view
+  const rId = doc.researchId || (state.researchItems && state.researchItems[docId] ? docId : null);
+  if (rId && state.researchItems && state.researchItems[rId]) {
+    state.activeResearchId = rId;
+    state.activeDocId = docId;
+    state.recentDocuments.forEach(d => d.active = (d.id === docId || d.researchId === rId));
+    renderResearchWorkspace(state.researchItems[rId]);
+    switchView('dashboard');
+    renderRecentDocumentsDrawer();
+    showToast(`Opened research workspace: ${state.researchItems[rId].title}`, ICONS.sparkle);
+    
+    const workspaceEl = document.getElementById('results-workspace');
+    if (workspaceEl) {
+      setTimeout(() => workspaceEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    }
+    return;
+  }
+
   state.activeDocId = docId;
   state.recentDocuments.forEach(d => d.active = (d.id === docId));
 
-  if (elements.topDocTitleInput) elements.topDocTitleInput.value = doc.title;
-  if (elements.docMainHeadingInput) elements.docMainHeadingInput.value = doc.title;
-  if (elements.docPromptTextarea) elements.docPromptTextarea.value = doc.prompt || '';
-
-  if (elements.docEditorContent) {
-    if (doc.content) {
-      elements.docEditorContent.innerHTML = doc.content;
-      if (elements.docRichEditorArea) elements.docRichEditorArea.classList.add('active');
-    } else if (doc.prompt) {
-      elements.docEditorContent.innerHTML = `<p>Working on <b>${doc.prompt}</b>. Start typing draft sections or insert citations.</p>`;
-      if (elements.docRichEditorArea) elements.docRichEditorArea.classList.add('active');
-    }
-  }
-
-  updatePromptFeedback();
-  updateLiveWordCount();
-  renderRecentDocumentsDrawer();
-  switchView('dashboard');
-  showToast(`Loaded: ${doc.title}`, ICONS.file);
+  openJenniEditor(doc.prompt || doc.title, state.citationPreferences, state.documentStructure);
 }
 
 function loadImportedWordDoc(fileName) {
@@ -4680,24 +5527,16 @@ function loadImportedWordDoc(fileName) {
     elements.docPromptTextarea.value = `Analysis and expansion of ${title}`;
   }
 
-  if (elements.docRichEditorArea) elements.docRichEditorArea.classList.add('active');
-  if (elements.docPromptAccordionBox) elements.docPromptAccordionBox.classList.add('collapsed');
-
-  if (elements.docEditorContent) {
-    elements.docEditorContent.innerHTML = `
-      <h2>${title}</h2>
-      <p><i>[Imported from Word .docx document on ${new Date().toLocaleDateString()}]</i></p>
-      <p>This document has been parsed and structured into the THAMILI Knowledge Engine. You can now prompt AI to summarize sections, generate literature citations, or expand methodology.</p>
-    `;
-  }
-
-  updatePromptFeedback();
-  updateLiveWordCount();
-  showToast(`Word document "${fileName}" parsed & imported!`, ICONS.check);
+  openJenniEditor(`Analysis and expansion of ${title}`, state.citationPreferences, 'imrad');
+  showToast(`Word document "${fileName}" parsed & imported into Editor!`, ICONS.check);
 }
 
 function insertTextAtCursor(text) {
-  if (elements.docEditorContent) {
+  const editorBody = document.getElementById('editor-document-body');
+  if (editorBody) {
+    editorBody.focus();
+    document.execCommand('insertHTML', false, text);
+  } else if (elements.docEditorContent) {
     elements.docEditorContent.focus();
     document.execCommand('insertHTML', false, text);
   }
@@ -4709,3 +5548,4 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+

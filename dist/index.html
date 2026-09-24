@@ -4,16 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>தமிழ் THAMILI - AI Research Workspace</title>
+  <title>தமிழ் THAMILI - Research & Documentation</title>
   <meta name="description"
-    content="Tamil-First AI Research Workspace. Research, discover, analyze, and organize knowledge with AI.">
+    content="Tamil-First AI Research & Documentation Workspace. Research, discover, analyze, and organize knowledge with AI.">
   <link rel="icon" type="image/png" href="/assets/favicon-C8DF5J1r.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-CJK0b-v2.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DwngvDT_.css">
+  <script type="module" crossorigin src="/assets/index-Dhv4Rr3j.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CUNF0snO.css">
 </head>
 
 <body>
@@ -463,8 +463,8 @@
       <!-- Top Navigation Bar -->
       <header class="top-navbar">
         <div class="top-nav-left">
-          <div class="domain-breadcrumb">
-            <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">AI Research Workspace</span>
+          <div class="domain-breadcrumb" id="top-navbar-breadcrumb">
+            <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">Research & Documentation</span>
           </div>
         </div>
 
@@ -491,6 +491,11 @@
 
           <!-- Centerpiece Hero & Search Card (Exact Match to Image 1) -->
           <div class="search-hero-wrapper">
+            <!-- Thamili Brand Logo (Compact & Clean) -->
+            <div class="thamili-hero-logo-container" id="hero-brand-logo-wrap" title="தமிழி - THAMILI AI Research Workspace">
+              <img src="/assets/thamili-logo-D-CvwM0D.png" alt="தமிழி THAMILI" class="thamili-hero-logo" />
+            </div>
+
             <!-- Big Centered Title (Image 1: "What do you want to know?") -->
             <h1 class="search-main-heading">What do you want to know?</h1>
 
@@ -507,22 +512,81 @@
               </div>
 
               <div class="search-card-toolbar">
-                <!-- Left Action Pills -->
+                <!-- Left Action Pills (Merged Pro & Deep Research Dropdown) -->
                 <div class="toolbar-left-pills">
-                  <!-- Pro Pill Badge (Image 1) -->
-                  <button type="button" class="pill-badge-btn pro-badge" id="btn-pro-toggle" title="Toggle Pro Mode">
-                    <span>pro</span>
-                  </button>
+                  <div class="search-mode-dropdown-wrap" id="search-mode-dropdown-wrap">
+                    <button type="button" class="pill-badge-btn search-mode-pill active" id="btn-search-mode-trigger" title="Select Research Mode">
+                      <svg class="atom-icon" id="current-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="12" cy="12" r="3" />
+                        <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
+                        <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+                      </svg>
+                      <span id="current-mode-label">Deep Research</span>
+                      <span class="pro-tag-mini" id="current-mode-pro-tag">pro</span>
+                      <svg class="chevron-arrow-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
 
-                  <!-- Deep Research Pill Button (Image 1) -->
-                  <button type="button" class="pill-badge-btn deep-research-pill active" id="btn-deep-research-toggle" title="Toggle Deep Research">
-                    <svg class="atom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <circle cx="12" cy="12" r="3" />
-                      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
-                      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
-                    </svg>
-                    <span>Deep Research</span>
-                  </button>
+                    <!-- Dropdown Options Popover -->
+                    <div class="search-mode-popover" id="search-mode-popover">
+                      <div class="search-mode-option selected" data-mode="deep" data-label="Deep Research" data-pro="true">
+                        <div class="mode-option-left">
+                          <svg class="mode-option-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="12" cy="12" r="3" />
+                            <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)" />
+                            <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)" />
+                          </svg>
+                          <div class="mode-meta">
+                            <div class="mode-heading-row">
+                              <span class="mode-name">Deep Research</span>
+                              <span class="pro-tag-mini">pro</span>
+                            </div>
+                            <span class="mode-desc">Multi-source literature synthesis & academic indexing</span>
+                          </div>
+                        </div>
+                        <svg class="mode-check-indicator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+
+                      <div class="search-mode-option" data-mode="pro" data-label="Pro Search" data-pro="true">
+                        <div class="mode-option-left">
+                          <svg class="mode-option-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                          </svg>
+                          <div class="mode-meta">
+                            <div class="mode-heading-row">
+                              <span class="mode-name">Pro Search</span>
+                              <span class="pro-tag-mini">pro</span>
+                            </div>
+                            <span class="mode-desc">Multi-step reasoning with guided clarifying follow-ups</span>
+                          </div>
+                        </div>
+                        <svg class="mode-check-indicator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+
+                      <div class="search-mode-option" data-mode="standard" data-label="Standard Search" data-pro="false">
+                        <div class="mode-option-left">
+                          <svg class="mode-option-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                          <div class="mode-meta">
+                            <div class="mode-heading-row">
+                              <span class="mode-name">Standard Search</span>
+                            </div>
+                            <span class="mode-desc">Fast direct AI answer and quick web references</span>
+                          </div>
+                        </div>
+                        <svg class="mode-check-indicator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Right Action Icons (Image 1) -->
@@ -637,69 +701,284 @@
 
               <!-- Accordion Body -->
               <div class="doc-prompt-body">
-                <div class="doc-prompt-input-wrap">
-                  <textarea 
-                    id="doc-prompt-textarea" 
-                    class="doc-prompt-textarea" 
-                    placeholder="A literature review on renewable energy policy"
-                    rows="3"
-                  ></textarea>
-                </div>
+                <!-- STEP 1: Prompt Input View -->
+                <div class="doc-prompt-step" id="doc-prompt-step-1">
+                  <div class="doc-prompt-input-wrap">
+                    <textarea 
+                      id="doc-prompt-textarea" 
+                      class="doc-prompt-textarea" 
+                      placeholder="A literature review on renewable energy policy"
+                      rows="3"
+                    ></textarea>
+                  </div>
 
-                <div class="doc-prompt-divider-line"></div>
+                  <div class="doc-prompt-divider-line"></div>
 
-                <!-- Dynamic Prompt Feedback Row -->
-                <div class="doc-prompt-feedback-row weak" id="doc-prompt-feedback-row">
-                  <span class="prompt-feedback-label" id="prompt-feedback-label">Weak prompt:</span>
-                  <span class="prompt-feedback-text" id="prompt-feedback-text">Add more context for higher quality generations</span>
-                </div>
-
-                <!-- Or Also Sub-Divider -->
-                <div class="doc-prompt-subdivider">
-                  <span>or also</span>
-                </div>
-
-                <!-- Import from Word (.docx) Card -->
-                <div class="card-action-import-word" id="card-action-import-word" title="Import from Word (.docx)">
-                  <div class="import-word-left">
-                    <div class="word-badge-icon">
-                      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-                        <rect width="32" height="32" rx="6" fill="#185ABD"/>
-                        <path d="M7 8.5L9.6 20H11.8L13.8 11.2L15.8 20H18L20.6 8.5H18.4L16.9 16.2L14.8 8.5H12.8L10.7 16.2L9.2 8.5H7Z" fill="white"/>
-                      </svg>
+                  <!-- Dynamic Prompt Feedback Row (Dynamic color coding: Red = Weak, Yellow = Good, Green = Very Good) -->
+                  <div class="doc-prompt-feedback-row" id="doc-prompt-feedback-row" style="display: none;">
+                    <div class="prompt-feedback-indicator">
+                      <span class="prompt-strength-dot dot-1"></span>
+                      <span class="prompt-strength-dot dot-2"></span>
+                      <span class="prompt-strength-dot dot-3"></span>
                     </div>
-                    <div class="import-word-meta">
-                      <div class="import-word-title">Import from Word (.docx)</div>
-                      <div class="import-word-sub">Import your work and improve it with AI</div>
+                    <strong class="prompt-feedback-label" id="prompt-feedback-label">Weak prompt:</strong>
+                    <span class="prompt-feedback-text" id="prompt-feedback-text">Add more context for higher quality generations</span>
+                  </div>
+
+                  <!-- Footer with Next Button -->
+                  <div class="doc-prompt-footer">
+                    <span class="doc-prompt-footer-hint">Type your research focus or generate outline</span>
+                    <button type="button" class="btn-doc-prompt-next" id="btn-doc-prompt-next">
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+                <!-- STEP 2: Citation Preferences View (Shows up after entering prompt) -->
+                <div class="doc-prompt-step citation-prefs-step" id="doc-prompt-step-2" style="display: none;">
+                  <!-- Progressive Summary Row: What are you writing about? -->
+                  <div class="wizard-summary-row">
+                    <span class="wizard-summary-title">What are you writing about?</span>
+                    <button type="button" class="wizard-summary-pill" id="summary-pill-prompt-step2" title="Edit prompt">
+                      <span class="summary-pill-text" id="summary-pill-prompt-text-step2">Research prompt</span>
+                      <span class="summary-pill-edit">Edit</span>
+                    </button>
+                  </div>
+
+                  <div class="citation-prefs-intro">
+                    <h3 class="citation-prefs-title">Let's set up your citation preferences.</h3>
+                  </div>
+
+                  <div class="citation-prefs-card">
+                    <!-- Row 1: Citation Style -->
+                    <div class="citation-pref-row">
+                      <label class="citation-pref-label" for="citation-pref-style-select">Citation Style</label>
+                      <div class="citation-select-wrap">
+                        <select id="citation-pref-style-select" class="citation-custom-select">
+                          <option value="apa" selected>APA (7th ed.) · American Psychological Association</option>
+                          <option value="mla">MLA (9th ed.) · Modern Language Association</option>
+                          <option value="harvard">Harvard · Author-Date Citation Style</option>
+                          <option value="chicago">Chicago (17th ed.) · Author-Date / Notes</option>
+                          <option value="ieee">IEEE · Institute of Electrical and Electronics Engineers</option>
+                          <option value="nature">Nature · Numbered Reference Style</option>
+                          <option value="vancouver">Vancouver · Uniform Requirements</option>
+                        </select>
+                        <svg class="citation-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- Row 2: Web Search -->
+                    <div class="citation-pref-row">
+                      <div class="citation-pref-meta">
+                        <span class="citation-pref-heading">Web search</span>
+                        <span class="citation-pref-sub">Allow Thamili to search the web for relevant sources</span>
+                      </div>
+                      <label class="citation-switch" title="Toggle web search">
+                        <input type="checkbox" id="citation-toggle-web" checked>
+                        <span class="citation-switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <!-- Row 3: Library Search -->
+                    <div class="citation-pref-row">
+                      <div class="citation-pref-meta">
+                        <span class="citation-pref-heading">Library search</span>
+                        <span class="citation-pref-sub">Upload PDFs to chat with, cite from or provide context to AI</span>
+                      </div>
+                      <button type="button" class="btn-citation-add-sources" id="btn-citation-add-sources" title="Upload and link PDF sources">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Add sources</span>
+                      </button>
+                    </div>
+
+                    <!-- Row 4: Publish Year -->
+                    <div class="citation-pref-row">
+                      <span class="citation-pref-heading">Publish year</span>
+                      <div class="citation-pill-group" id="pref-group-publish-year">
+                        <button type="button" class="citation-pill-btn active" data-value="all">All</button>
+                        <button type="button" class="citation-pill-btn" data-value="5years">Last 5 years</button>
+                        <button type="button" class="citation-pill-btn" data-value="custom">Custom</button>
+                      </div>
+                    </div>
+
+                    <!-- Row 5: Impact Factor -->
+                    <div class="citation-pref-row">
+                      <span class="citation-pref-heading">Impact Factor</span>
+                      <div class="citation-pill-group" id="pref-group-impact-factor">
+                        <button type="button" class="citation-pill-btn active" data-value="all">All</button>
+                        <button type="button" class="citation-pill-btn" data-value="0.25">0.25+</button>
+                        <button type="button" class="citation-pill-btn" data-value="3">3+</button>
+                        <button type="button" class="citation-pill-btn" data-value="10">10+</button>
+                      </div>
+                    </div>
+
+                    <!-- Row 6: Cited By -->
+                    <div class="citation-pref-row">
+                      <span class="citation-pref-heading">Cited by</span>
+                      <div class="citation-pill-group" id="pref-group-cited-by">
+                        <button type="button" class="citation-pill-btn active" data-value="all">All</button>
+                        <button type="button" class="citation-pill-btn" data-value="5">5+</button>
+                        <button type="button" class="citation-pill-btn" data-value="20">20+</button>
+                        <button type="button" class="citation-pill-btn" data-value="50">50+</button>
+                      </div>
+                    </div>
+
+                    <!-- Row 7: Include Preprints -->
+                    <div class="citation-pref-row">
+                      <span class="citation-pref-heading">Include preprints</span>
+                      <label class="citation-switch" title="Toggle preprints">
+                        <input type="checkbox" id="citation-toggle-preprints" checked>
+                        <span class="citation-switch-slider"></span>
+                      </label>
+                    </div>
+
+                    <!-- Navigation Row (Back and Next) -->
+                    <div class="citation-prefs-footer">
+                      <button type="button" class="btn-citation-back" id="btn-citation-back" title="Go back to prompt">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                      </button>
+                      <button type="button" class="btn-citation-submit" id="btn-citation-submit">
+                        Next
+                      </button>
                     </div>
                   </div>
-                  <div class="import-word-chevron">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6"></polyline>
+                </div>
+
+                <!-- STEP 3: Document Structure View (How would you like to structure your document?) -->
+                <div class="doc-prompt-step structure-prefs-step" id="doc-prompt-step-3" style="display: none;">
+                  <!-- Summary Row 1: What are you writing about? -->
+                  <div class="wizard-summary-row">
+                    <span class="wizard-summary-title">What are you writing about?</span>
+                    <button type="button" class="wizard-summary-pill" id="summary-pill-prompt-step3" title="Edit prompt">
+                      <span class="summary-pill-text" id="summary-pill-prompt-text-step3">Research prompt</span>
+                      <span class="summary-pill-edit">Edit</span>
+                    </button>
+                  </div>
+
+                  <!-- Summary Row 2: Let's set up your citation preferences. -->
+                  <div class="wizard-summary-row">
+                    <span class="wizard-summary-title">Let's set up your citation preferences.</span>
+                    <button type="button" class="wizard-summary-pill" id="summary-pill-citations-step3" title="Edit citation preferences">
+                      <span class="summary-pill-text" id="summary-pill-citations-text">APA (7th ed.) · Web search: On · Library search: On</span>
+                      <span class="summary-pill-edit">Edit</span>
+                    </button>
+                  </div>
+
+                  <!-- Heading for Step 3 -->
+                  <div class="structure-prefs-intro">
+                    <h3 class="structure-prefs-title">How would you like to structure your document?</h3>
+                  </div>
+
+                  <div class="structure-prefs-card">
+                    <div class="structure-options-list">
+                      <!-- Option 1: Standard headings (IMRaD) (selected by default) -->
+                      <div class="structure-option-card selected" data-structure="imrad" id="structure-opt-imrad">
+                        <div class="structure-opt-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                            <line x1="17" y1="18" x2="3" y2="18"></line>
+                          </svg>
+                        </div>
+                        <div class="structure-opt-content">
+                          <div class="structure-opt-title">Standard headings (IMRaD)</div>
+                          <div class="structure-opt-desc">Add standard headings (Introduction, Methods, Results etc.)</div>
+                        </div>
+                      </div>
+
+                      <!-- Option 2: Smart headings -->
+                      <div class="structure-option-card" data-structure="smart" id="structure-opt-smart">
+                        <div class="structure-opt-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3l1.5 3.5L17 8l-3.5 1.5L12 13l-1.5-3.5L7 8l3.5-1.5L12 3z"></path>
+                            <line x1="21" y1="14" x2="9" y2="14"></line>
+                            <line x1="19" y1="19" x2="9" y2="19"></line>
+                          </svg>
+                        </div>
+                        <div class="structure-opt-content">
+                          <div class="structure-opt-title">Smart headings</div>
+                          <div class="structure-opt-desc">AI will generate headings based on your document prompt</div>
+                        </div>
+                      </div>
+
+                      <!-- Option 3: No headings -->
+                      <div class="structure-option-card" data-structure="none" id="structure-opt-none">
+                        <div class="structure-opt-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="5" width="16" height="4" rx="1.5"></rect>
+                            <line x1="4" y1="14" x2="14" y2="14" stroke-dasharray="2 2"></line>
+                          </svg>
+                        </div>
+                        <div class="structure-opt-content">
+                          <div class="structure-opt-title">No headings</div>
+                          <div class="structure-opt-desc">Start with just a title</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Navigation Row (Back and Start Writing) -->
+                    <div class="structure-prefs-footer">
+                      <button type="button" class="btn-structure-back" id="btn-structure-back" title="Go back to citation preferences">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                      </button>
+                      <button type="button" class="btn-start-writing" id="btn-start-writing">
+                        Start Writing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Import Word (.docx) Option Button (Placed at the bottom of Fill Document Prompt) -->
+            <input type="file" id="prompt-word-file-input" accept=".docx,.doc,.txt,.pdf" style="display: none;">
+            <div class="doc-prompt-accordion-box doc-prompt-word-option-box" id="btn-hero-import-word" title="Import Word Document (.docx)">
+              <div class="doc-prompt-header" id="hero-import-word-header">
+                <div class="doc-prompt-header-title">
+                  <span class="word-mini-icon-wrap" style="margin-right: 2px;">
+                    <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                      <rect width="32" height="32" rx="6" fill="#185ABD"/>
+                      <path d="M7 8.5L9.6 20H11.8L13.8 11.2L15.8 20H18L20.6 8.5H18.4L16.9 16.2L14.8 8.5H12.8L10.7 16.2L9.2 8.5H7Z" fill="white"/>
                     </svg>
-                  </div>
+                  </span>
+                  <span>Import Word (.docx)</span>
                 </div>
-
-                <!-- Footer with Next Button -->
-                <div class="doc-prompt-footer">
-                  <button type="button" class="btn-doc-prompt-next" id="btn-doc-prompt-next">
-                    Next
-                  </button>
+                <div class="doc-prompt-action-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 7-Stage Animated AI Research Loading State -->
+          <!-- 7-Stage Animated AI Research Loading State with 3D Tamil Glyph Neural Sphere -->
           <div class="research-loading-overlay" id="research-loading-overlay">
-            <div class="loader-sparkle-spin">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path
-                  d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
-                </path>
-              </svg>
+            <!-- 3D Tamil Glyph Neural Sphere Animation Hero -->
+            <div class="neural-sphere-loading-hero">
+              <div class="dot-matrix-wave-wrapper" id="dot-matrix-wave-wrapper">
+                <canvas id="tamil-neural-sphere-canvas" class="dot-matrix-wave-canvas" style="cursor: crosshair; touch-action: none;"></canvas>
+                <div class="dot-matrix-progress-badge" id="dot-matrix-progress-badge" title="Generation progress">
+                  <span id="dot-matrix-progress-text">1%</span>
+                </div>
+              </div>
             </div>
-            <div class="loader-title">Synthesizing Domain Research...</div>
+
+            <div class="loader-title" id="loader-title">Synthesizing Domain Research...</div>
             <div class="loader-query-badge" id="loader-query-badge">Query: "Impact of AI on Education"</div>
 
             <div class="progress-bar-container">
@@ -849,6 +1128,192 @@
 
           </div>
 
+        </section>
+
+        <!-- ==========================================
+           VIEW: FULL DOCUMENT WRITING EDITOR (JENNI AI STYLE MATCH)
+           Full-screen document editor with assistant panel, rich toolbar, and canvas
+           ========================================== -->
+        <section class="page-view" id="view-editor">
+          <div class="editor-workspace-layout">
+
+            <!-- 1. Top Editor Header Bar -->
+            <div class="editor-top-header">
+              <div class="editor-header-left">
+                <button type="button" class="btn-editor-back-home" id="btn-editor-back-home" title="Back to Dashboard">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <div class="editor-title-container">
+                  <input type="text" class="editor-doc-title-input" id="editor-doc-title-input" value="Large Language Models: Architectures, Capabilities, and Applications" placeholder="Document Title..." />
+                </div>
+              </div>
+
+              <div class="editor-header-right">
+                <button type="button" class="btn-editor-header-action" id="btn-editor-share" title="Share Document">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                  <span>Share</span>
+                </button>
+
+                <button type="button" class="btn-editor-header-action" id="btn-editor-review" title="Review Document">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <span>Review</span>
+                </button>
+
+                <button type="button" class="btn-editor-header-action" id="btn-editor-chat" title="Open AI Chat Assistant">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span>AI Chat</span>
+                </button>
+
+                <button type="button" class="btn-editor-header-pricing" id="btn-editor-pricing" title="View Plans">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                  <span>See Pricing</span>
+                </button>
+
+                <button type="button" class="btn-editor-header-more" id="btn-editor-more" title="More options">
+                  •••
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Sticky Formatting Toolbar -->
+            <div class="editor-formatting-toolbar" id="editor-formatting-toolbar">
+              <div class="toolbar-tools-left">
+                <!-- Undo / Redo -->
+                <button type="button" class="tb-btn" id="tb-undo" title="Undo (Ctrl+Z)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                </button>
+                <button type="button" class="tb-btn" id="tb-redo" title="Redo (Ctrl+Y)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+                </button>
+
+                <div class="tb-divider"></div>
+
+                <!-- Text Style Selector -->
+                <div class="tb-style-dropdown-wrap">
+                  <button type="button" class="tb-style-btn" id="tb-style-btn" title="Text Style">
+                    <span id="tb-current-style-label">Text</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                  <div class="tb-style-popover" id="tb-style-popover">
+                    <div class="tb-style-option" data-tag="p">Paragraph (Text)</div>
+                    <div class="tb-style-option" data-tag="h1">Heading 1</div>
+                    <div class="tb-style-option" data-tag="h2">Heading 2</div>
+                    <div class="tb-style-option" data-tag="h3">Heading 3</div>
+                    <div class="tb-style-option" data-tag="blockquote">Quote</div>
+                    <div class="tb-style-option" data-tag="pre">Code block</div>
+                  </div>
+                </div>
+
+                <div class="tb-divider"></div>
+
+                <!-- Basic Formatting -->
+                <button type="button" class="tb-btn" id="tb-bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                <button type="button" class="tb-btn" id="tb-italic" title="Italic (Ctrl+I)"><i>I</i></button>
+                <button type="button" class="tb-btn" id="tb-underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                <button type="button" class="tb-btn" id="tb-strike" title="Strikethrough"><s>S</s></button>
+                <button type="button" class="tb-btn" id="tb-code" title="Inline Code">&lt;&gt;</button>
+                <button type="button" class="tb-btn" id="tb-sup" title="Superscript">x²</button>
+                <button type="button" class="tb-btn" id="tb-sub" title="Subscript">x₂</button>
+                <button type="button" class="tb-btn" id="tb-link" title="Insert Link">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                </button>
+                <button type="button" class="tb-btn" id="tb-color" title="Text Color">
+                  <span class="tb-color-dot"></span>
+                </button>
+
+                <div class="tb-divider"></div>
+
+                <!-- Citation Tool -->
+                <button type="button" class="tb-btn tb-cite-btn" id="tb-cite" title="Insert Academic Citation">
+                  <span style="font-weight: 700; margin-right: 2px;">@</span>
+                  <span>Cite</span>
+                </button>
+
+                <div class="tb-divider"></div>
+
+                <!-- Insert Objects -->
+                <button type="button" class="tb-btn" id="tb-image" title="Insert Image">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </button>
+                <button type="button" class="tb-btn" id="tb-table" title="Insert Table">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                </button>
+                <button type="button" class="tb-btn" id="tb-codeblock" title="Code Block">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </button>
+                <button type="button" class="tb-btn" id="tb-math" title="Math Symbol">(x)</button>
+                <button type="button" class="tb-btn" id="tb-equation" title="Equation">Σ</button>
+              </div>
+
+              <!-- Autocomplete Toggle -->
+              <div class="toolbar-tools-right">
+                <label class="tb-autocomplete-toggle" title="Enable/Disable AI Autocomplete">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Autocomplete</span>
+                  <input type="checkbox" id="tb-autocomplete-checkbox" checked>
+                  <span class="tb-switch-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 3. Split Editor Body Layout -->
+            <div class="editor-main-split">
+              <!-- Left: Document Assistant / Section Prompts Subpanel -->
+              <aside class="editor-assistant-panel" id="editor-assistant-panel">
+                <div class="assistant-panel-header">
+                  <div class="assistant-header-title">
+                    <span>Document prompt</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                  <button type="button" class="btn-collapse-assistant" id="btn-collapse-assistant" title="Collapse assistant">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                  </button>
+                </div>
+
+                <!-- Document Prompt Box -->
+                <div class="editor-prompt-card" id="editor-prompt-display-card">
+                  <p id="editor-prompt-text-content">Analyze large language models as a major development in artificial intelligence, focusing on their conceptual foundations, architectures, training methods, applications, evaluation, and broader implications. Use a clear academic style suitable for interdisciplinary research in artificial intelligence and computational language studies.</p>
+                </div>
+
+                <!-- Section Prompts Header & List -->
+                <div class="section-prompts-container">
+                  <div class="section-prompts-heading">Section prompts</div>
+                  <div class="section-prompts-list" id="editor-section-prompts-list">
+                    <!-- Dynamic Sections -->
+                  </div>
+                </div>
+              </aside>
+
+              <!-- Right: Main Writing Canvas -->
+              <div class="editor-canvas-container">
+                <div class="editor-paper-sheet">
+                  <h1 class="editor-main-h1" id="editor-main-h1" contenteditable="true" spellcheck="false">Large Language Models: Architectures, Capabilities, and Applications</h1>
+                  <div class="editor-document-body" id="editor-document-body" contenteditable="true" spellcheck="false">
+                    <!-- Rendered Headings and Content -->
+                  </div>
+                </div>
+
+                <!-- Floating Word Count Badge -->
+                <div class="editor-word-count-badge" id="editor-word-count-badge">53 words</div>
+              </div>
+            </div>
+
+          </div>
         </section>
 
         <!-- ==========================================
